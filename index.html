@@ -243,19 +243,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
   .notes-panel{width:100%;min-width:0;border-left:none;border-top:1px solid var(--border);display:none;max-height:50vh}
   .notes-panel.mob-active{display:flex}
 
-  /* mobile bottom tab bar */
-  .mob-tab-bar{
-    display:flex!important;
-    position:fixed;bottom:0;left:0;right:0;
-    background:var(--surface);border-top:1px solid var(--border);
-    z-index:200;height:54px;
-  }
-  .mob-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10px;color:var(--text3);cursor:pointer;border:none;background:none;font-family:var(--font);padding:6px 0;transition:color .1s}
-  .mob-tab.active{color:var(--text)}
-  .mob-tab-icon{font-size:18px;line-height:1}
+  /* show tab bar on mobile */
+  .mob-tab-bar{display:flex!important}
 
   /* bump content above bottom bar */
-  .layout{padding-bottom:54px}
+  .layout{padding-bottom:56px}
 
   /* task list larger touch targets */
   .task-row{padding:12px 12px;min-height:48px}
@@ -413,6 +405,7 @@ const PHASE_COLORS=['#888780','#7F77DD','#1D9E75','#D85A30','#378ADD','#D4537E',
 let scriptUrl=localStorage.getItem('ws_script_url')||'';
 let driveScriptUrl=localStorage.getItem('ws_drive_url')||'';
 let saveTimer=null;
+let syncStatus='none'; // declared early so showMobSync can reference it
 let expandedTasks={};
 let editingTask=null;
 let editingSubtask=null;
@@ -1306,13 +1299,26 @@ selProj=function(id){
 function showToast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2200)}
 
 // SYNC
-function setSyncBadge(s){const el=document.getElementById('syncBadge');el.className='badge '+s;el.textContent={ok:'saved',err:'sync error',busy:'syncing…',none:'not connected'}[s]||s}
+function setSyncBadge(s){
+  syncStatus=s;
+  const el=document.getElementById('syncBadge');
+  if(el){el.className='badge '+s;el.textContent={ok:'saved',err:'sync error',busy:'syncing…',none:'not connected'}[s]||s;}
+}
 function connectSheet(){const url=document.getElementById('urlInput').value.trim();if(!url)return;scriptUrl=url;localStorage.setItem('ws_script_url',url);setSyncBadge('busy');loadFromSheetJSONP()}
-function scheduleSave(){if(!scriptUrl)return;clearTimeout(saveTimer);setSyncBadge('busy');saveTimer=setTimeout(pushToSheet,1800)}
+function scheduleSave(){
+  if(!scriptUrl)return;
+  clearTimeout(saveTimer);
+  setSyncBadge('busy');
+  // on mobile save immediately, on desktop small delay
+  const delay=isMobile()?200:1800;
+  saveTimer=setTimeout(pushToSheet,delay);
+}
 async function pushToSheet(){
   if(!scriptUrl)return;
-  try{await fetch(scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'save',projects:state.projects})});setSyncBadge('ok')}
-  catch(e){setSyncBadge('err')}
+  try{
+    await fetch(scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'save',projects:state.projects})});
+    setSyncBadge('ok');
+  }catch(e){setSyncBadge('err');}
 }
 function loadFromSheetJSONP(){
   if(!scriptUrl){setSyncBadge('none');return}
@@ -1337,8 +1343,18 @@ function loadFromSheetJSONP(){
   document.head.appendChild(s);
 }
 
+// Save when user switches tabs or minimizes (catches mobile background)
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='hidden'&&scriptUrl){
+    clearTimeout(saveTimer);
+    // Use sendBeacon for reliable background save
+    const data=JSON.stringify({action:'save',projects:state.projects});
+    if(navigator.sendBeacon){navigator.sendBeacon(scriptUrl,data);}
+    else{fetch(scriptUrl,{method:'POST',mode:'no-cors',body:data}).catch(()=>{})}
+  }
+});
+
 render();
-if(scriptUrl){setSyncBadge('busy');setTimeout(loadFromSheetJSONP,400)}
-</script>
+if(scriptUrl){setSyncBadge('busy');setTimeout(loadFromSheetJSONP,400)}</script>
 </body>
 </html>
