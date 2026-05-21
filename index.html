@@ -495,7 +495,7 @@ function runImport(){
 }
 
 // SEND TO CLAUDE
-function sendToClaude(){
+function buildExport(){
   const p=getProj();const ph=getPhaseKey();
   const tasks=(p.tasks[ph]||[]);
   const highlighted=tasks.filter(t=>t.highlighted).map(t=>'★ '+t.text).join('\n');
@@ -506,12 +506,82 @@ function sendToClaude(){
     return s;
   }).join('\n');
   const notes=(p.notes[ph]||[]).map(n=>n.text).join('\n');
-  const msg=`Project: ${p.name}\nPhase: ${ph}\n\n${highlighted?'Highlights:\n'+highlighted+'\n\n':''}Tasks:\n${allTasks}\n\n${notes?'Phase notes:\n'+notes:''}`;
-  sendPromptToClaudeChat(msg);
+  return`Project: ${p.name}\nPhase: ${ph}\n\n${highlighted?'Highlights:\n'+highlighted+'\n\n':''}Tasks:\n${allTasks}\n\n${notes?'Phase notes:\n'+notes:''}`;
 }
-function sendPromptToClaudeChat(msg){
-  if(typeof sendPrompt==='function'){sendPrompt(msg);}
-  else{navigator.clipboard.writeText(msg).then(()=>showToast('Copied to clipboard — paste into Claude chat'));} 
+
+function sendToClaude(){
+  const msg=buildExport();
+  // show export panel
+  const existing=document.getElementById('exportPanel');if(existing)existing.remove();
+  const div=document.createElement('div');div.id='exportPanel';
+  div.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:400;display:flex;align-items:center;justify-content:center';
+  div.innerHTML=`<div style="background:var(--surface);border-radius:var(--radius);padding:22px 24px;width:520px;max-height:80vh;display:flex;flex-direction:column;gap:14px;box-shadow:0 12px 40px rgba(0,0,0,.2)">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:14px;font-weight:500;flex:1">Send to Claude</span>
+      <button class="btn sm" onclick="document.getElementById('exportPanel').remove()">✕ Close</button>
+    </div>
+    <p style="font-size:12px;color:var(--text2);line-height:1.5">Copy the export below, then paste it into a Claude chat and add your question.</p>
+    <textarea id="exportText" style="font-size:12px;font-family:var(--mono);padding:10px;border:1px solid var(--border-md);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);resize:none;height:220px;outline:none;line-height:1.5">${esc(msg)}</textarea>
+    <div style="display:flex;gap:8px">
+      <button class="btn dark" onclick="copyExport()" id="copyExportBtn">⎘ Copy to clipboard</button>
+      <button class="btn" onclick="openInClaude()" title="Open Claude.ai in a new tab">↗ Open Claude.ai</button>
+      <span style="flex:1"></span>
+      <button class="btn sm" onclick="document.getElementById('exportPanel').remove()">Done</button>
+    </div>
+  </div>`;
+  document.body.appendChild(div);
+}
+function copyExport(){
+  const txt=document.getElementById('exportText');
+  if(!txt)return;
+  navigator.clipboard.writeText(txt.value).then(()=>{
+    const btn=document.getElementById('copyExportBtn');
+    if(btn){btn.textContent='✓ Copied!';setTimeout(()=>{if(btn)btn.textContent='⎘ Copy to clipboard'},2000);}
+  });
+}
+function openInClaude(){
+  navigator.clipboard.writeText(document.getElementById('exportText').value).then(()=>{
+    window.open('https://claude.ai/new','_blank');
+    showToast('Copied — paste into the new Claude tab');
+  });
+}
+
+// PROJECT DRAG REORDER
+let projDragSrc=null;
+function projDragStart(e,id){projDragSrc=id;setTimeout(()=>{const el=document.getElementById('pi_'+id);if(el)el.style.opacity='.4'},0)}
+function projDragOver(e,id){e.preventDefault();if(id===projDragSrc)return;const el=document.getElementById('pi_'+id);if(el)el.style.borderTop='2px solid var(--accent)'}
+function projDragLeave(e,id){const el=document.getElementById('pi_'+id);if(el)el.style.borderTop=''}
+function projDrop(e,id){
+  e.preventDefault();
+  const el=document.getElementById('pi_'+id);if(el){el.style.borderTop='';el.style.opacity='1';}
+  if(!projDragSrc||projDragSrc===id)return;
+  const si=state.projects.findIndex(p=>p.id===projDragSrc);
+  const di=state.projects.findIndex(p=>p.id===id);
+  if(si<0||di<0)return;
+  const[moved]=state.projects.splice(si,1);state.projects.splice(di,0,moved);
+  projDragSrc=null;renderSidebar();scheduleSave();
+}
+function projDragEnd(e){
+  // clean up all opacity/borders
+  state.projects.forEach(p=>{const el=document.getElementById('pi_'+p.id);if(el){el.style.opacity='1';el.style.borderTop='';}});
+  projDragSrc=null;
+}
+
+// PROJECT STATUS
+const PROJ_STATUSES=[
+  {key:'active',label:'Active',color:'#1D9E75'},
+  {key:'waiting',label:'Waiting',color:'#BA7517'},
+  {key:'backburner',label:'Back burner',color:'#888780'},
+  {key:'done',label:'Done',color:'#378ADD'},
+];
+function getProjStatus(pr){return pr.status||'active';}
+function getStatusInfo(key){return PROJ_STATUSES.find(s=>s.key===key)||PROJ_STATUSES[0];}
+function cycleStatus(e,pid){
+  e.stopPropagation();
+  const p=state.projects.find(pr=>pr.id===pid);if(!p)return;
+  const idx=PROJ_STATUSES.findIndex(s=>s.key===(p.status||'active'));
+  p.status=PROJ_STATUSES[(idx+1)%PROJ_STATUSES.length].key;
+  renderSidebar();scheduleSave();
 }
 
 // RENDER
@@ -525,11 +595,24 @@ function render(){
 }
 
 function renderSidebar(){
-  document.getElementById('projList').innerHTML=state.projects.map(pr=>`
-    <div class="proj-item ${pr.id===state.activeProject?'active':''}" onclick="selProj('${pr.id}')" oncontextmenu="showProjCtx(event,'${pr.id}')">
+  document.getElementById('projList').innerHTML=state.projects.map(pr=>{
+    const st=getStatusInfo(getProjStatus(pr));
+    const isActive=pr.id===state.activeProject;
+    return`<div class="proj-item ${isActive?'active':''}" id="pi_${pr.id}"
+      onclick="selProj('${pr.id}')"
+      oncontextmenu="showProjCtx(event,'${pr.id}')"
+      draggable="true"
+      ondragstart="projDragStart(event,'${pr.id}')"
+      ondragover="projDragOver(event,'${pr.id}')"
+      ondragleave="projDragLeave(event,'${pr.id}')"
+      ondrop="projDrop(event,'${pr.id}')"
+      ondragend="projDragEnd(event)">
+      <span style="color:var(--text3);cursor:grab;font-size:12px;flex-shrink:0;opacity:0.4" title="Drag to reorder">⠿</span>
       <span class="proj-dot" style="background:${pr.color}"></span>
       <span class="proj-name">${esc(pr.name)}</span>
-    </div>`).join('');
+      <span class="proj-status-badge" onclick="cycleStatus(event,'${pr.id}')" title="Click to change status: ${st.label}" style="font-size:9px;padding:1px 5px;border-radius:3px;background:${st.color}22;color:${st.color};border:1px solid ${st.color}44;cursor:pointer;flex-shrink:0;white-space:nowrap;font-weight:500">${st.label}</span>
+    </div>`;
+  }).join('');
   const area=document.getElementById('addProjArea');
   if(state.addingProj){
     area.innerHTML=`<div class="np-form">
@@ -918,7 +1001,13 @@ function showTaskCtx(e,id){
 }
 function showProjCtx(e,pid){
   e.preventDefault();e.stopPropagation();
+  const p=state.projects.find(pr=>pr.id===pid);
+  const st=getStatusInfo(getProjStatus(p));
   showCtx(e.clientX,e.clientY,[
+    {label:'Status: '+st.label+' — click to cycle',fn:`function(){cycleStatus({stopPropagation:()=>{}},\'${pid}\')}`},
+    'sep',
+    ...PROJ_STATUSES.map(s=>({label:(s.key===(p.status||'active')?'✓ ':'')+s.label,fn:`function(){const p=state.projects.find(p=>p.id==='${pid}');if(p){p.status='${s.key}';renderSidebar();scheduleSave();}}`})),
+    'sep',
     {label:'🗑 Delete project',fn:`function(){deleteProject('${pid}')}`,danger:true}
   ]);
 }
