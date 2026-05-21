@@ -193,10 +193,122 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 .modal input{width:100%;font-size:13px;padding:8px 10px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg);color:var(--text);font-family:var(--font);outline:none}
 .modal input:focus{border-color:var(--border-strong)}
 .upload-progress{font-size:12px;color:var(--text3);font-family:var(--mono)}
+
+/* =====================
+   MOBILE RESPONSIVE
+   Only applies ≤ 768px
+   Desktop unchanged
+   ===================== */
+@media(max-width:768px){
+  html,body{height:100%;overflow:hidden;position:fixed;width:100%}
+
+  /* topbar — hide sync url, show hamburger */
+  .topbar{padding:8px 14px;height:48px;gap:8px}
+  .sync-url{display:none}
+  .topbar .btn:not(.mob-always){display:none}
+  .badge{display:none}
+  .mob-menu-btn{display:flex!important}
+
+  /* sidebar becomes a slide-out drawer */
+  .sidebar{
+    position:fixed;top:0;left:0;bottom:0;z-index:350;
+    width:82vw;max-width:300px;
+    transform:translateX(-100%);
+    transition:transform .25s ease;
+    box-shadow:4px 0 24px rgba(0,0,0,.15);
+  }
+  .sidebar.open{transform:translateX(0)}
+  .sidebar-overlay{
+    display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);
+    z-index:340;
+  }
+  .sidebar-overlay.show{display:block}
+
+  /* layout — main takes full width */
+  .layout{flex-direction:column}
+  .main{width:100%;flex:1;overflow:hidden}
+
+  /* project header */
+  .proj-header{padding:10px 14px 8px;gap:8px}
+  .proj-title{font-size:15px}
+  .proj-header .btn.sm{font-size:11px;padding:5px 8px}
+
+  /* phase bar */
+  .phase-bar{padding:8px 14px;gap:5px}
+
+  /* content — stack vertically, tabs to switch */
+  .content{flex-direction:column;overflow:hidden;flex:1}
+  .tasks-panel{padding:12px 14px;gap:8px;overflow:hidden;display:none}
+  .tasks-panel.mob-active{display:flex}
+  .notes-panel{width:100%;min-width:0;border-left:none;border-top:1px solid var(--border);display:none;max-height:50vh}
+  .notes-panel.mob-active{display:flex}
+
+  /* mobile bottom tab bar */
+  .mob-tab-bar{
+    display:flex!important;
+    position:fixed;bottom:0;left:0;right:0;
+    background:var(--surface);border-top:1px solid var(--border);
+    z-index:200;height:54px;
+  }
+  .mob-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10px;color:var(--text3);cursor:pointer;border:none;background:none;font-family:var(--font);padding:6px 0;transition:color .1s}
+  .mob-tab.active{color:var(--text)}
+  .mob-tab-icon{font-size:18px;line-height:1}
+
+  /* bump content above bottom bar */
+  .layout{padding-bottom:54px}
+
+  /* task list larger touch targets */
+  .task-row{padding:12px 12px;min-height:48px}
+  .task-cb{width:18px;height:18px}
+  .task-actions{opacity:1!important}
+  .icon-btn{padding:5px 6px;font-size:14px}
+  .drag-handle{opacity:.4!important}
+
+  /* subtask rows */
+  .subtask-row{padding:8px 6px}
+  .s-cb{width:16px;height:16px}
+  .s-del{opacity:1!important}
+
+  /* add row — stack on small screens */
+  .add-row{flex-wrap:wrap;gap:6px}
+  .add-inp{font-size:16px;min-width:0} /* 16px prevents iOS zoom */
+  .type-toggle{width:100%;order:2}
+  .type-btn{flex:1;padding:10px}
+  .add-row .btn.dark{order:3;width:100%;justify-content:center;padding:10px}
+
+  /* import area */
+  .import-ta{font-size:14px;min-height:100px}
+
+  /* notes panel mobile */
+  .quick-area{padding:10px 14px}
+  .q-textarea{font-size:16px;min-height:80px}
+  .items-list{padding:8px 14px}
+
+  /* task detail */
+  .task-detail{padding:10px 12px 16px}
+  .add-sub-inp{font-size:16px;padding:9px 10px}
+  .task-note-area{font-size:16px}
+
+  /* phase chips larger */
+  .phase-chip{padding:6px 14px;font-size:12px}
+
+  /* proj items larger */
+  .proj-item{padding:11px 10px;font-size:14px}
+  .sb-foot{padding:14px 10px}
+
+  /* modals full-width on mobile */
+  #exportPanel>div, #confirmModal>div{width:92vw!important;max-width:none!important}
+}
+
+/* elements hidden on desktop, shown on mobile */
+.mob-menu-btn{display:none}
+.mob-tab-bar{display:none}
+.sidebar-overlay{display:none}
 </style>
 </head>
 <body>
 <div class="topbar">
+  <button class="btn mob-menu-btn" onclick="toggleSidebar()" style="font-size:18px;padding:4px 8px;border:none;background:none;color:var(--text)">☰</button>
   <div class="logo">Workspace <em>/ projects</em></div>
   <div class="spacer"></div>
   <input class="sync-url" id="urlInput" placeholder="Paste Apps Script URL to sync..."/>
@@ -204,9 +316,13 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
   <button class="btn" onclick="loadFromSheetJSONP()">↺ Load</button>
   <span class="badge none" id="syncBadge">not connected</span>
 </div>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 <div class="layout">
-  <div class="sidebar">
-    <div class="sb-head">Projects</div>
+  <div class="sidebar" id="sidebar">
+    <div class="sb-head" style="display:flex;align-items:center;justify-content:space-between;padding-right:10px">
+      Projects
+      <button class="btn sm mob-menu-btn" onclick="toggleSidebar()" style="font-size:16px;padding:2px 6px;border:none;background:none;color:var(--text3)">✕</button>
+    </div>
     <div class="proj-list" id="projList"></div>
     <div id="addProjArea"></div>
   </div>
@@ -217,7 +333,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
     </div>
     <div class="phase-bar" id="phaseBar"></div>
     <div class="content">
-      <div class="tasks-panel">
+      <div class="tasks-panel mob-active" id="tasksPanel">
         <div class="panel-row">
           <span class="panel-label" id="panelLabel">Tasks &amp; Questions</span>
           <button class="btn sm" id="importToggleBtn" onclick="toggleImport()">⬇ Import outline</button>
@@ -247,7 +363,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
         </div>
         <div class="task-list" id="taskList"></div>
       </div>
-      <div class="notes-panel">
+      <div class="notes-panel" id="notesPanel">
         <div class="np-head">
           <span class="panel-label" style="flex:1">Phase notes</span>
           <div class="np-tabs">
@@ -271,6 +387,25 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
   </div>
 </div>
 <div class="toast" id="toast"></div>
+
+<!-- MOBILE BOTTOM TAB BAR -->
+<div class="mob-tab-bar">
+  <button class="mob-tab active" id="mobTabTasks" onclick="mobSwitchTab('tasks')">
+    <span class="mob-tab-icon">☑</span>Tasks
+  </button>
+  <button class="mob-tab" id="mobTabNotes" onclick="mobSwitchTab('notes')">
+    <span class="mob-tab-icon">📝</span>Notes
+  </button>
+  <button class="mob-tab" id="mobTabAdd" onclick="focusAddTask()">
+    <span class="mob-tab-icon">＋</span>Add
+  </button>
+  <button class="mob-tab" id="mobTabClaude" onclick="sendToClaude()">
+    <span class="mob-tab-icon">✦</span>Claude
+  </button>
+  <button class="mob-tab" id="mobTabSync" onclick="showMobSync()">
+    <span class="mob-tab-icon">☁</span>Sync
+  </button>
+</div>
 
 <script>
 const COLORS=['#7F77DD','#1D9E75','#D85A30','#378ADD','#D4537E','#BA7517','#639922','#888780'];
@@ -1104,6 +1239,68 @@ function dragDrop(e,id){
   const[moved]=tasks.splice(si,1);tasks.splice(di,0,moved);
   dragSrcId=null;renderTasks(p);scheduleSave();
 }
+
+// MOBILE
+function isMobile(){return window.innerWidth<=768;}
+function toggleSidebar(){
+  const sb=document.getElementById('sidebar');
+  const ov=document.getElementById('sidebarOverlay');
+  const open=sb.classList.toggle('open');
+  ov.classList.toggle('show',open);
+}
+function mobSwitchTab(tab){
+  const tp=document.getElementById('tasksPanel');
+  const np=document.getElementById('notesPanel');
+  const t1=document.getElementById('mobTabTasks');
+  const t2=document.getElementById('mobTabNotes');
+  if(tab==='tasks'){
+    tp.classList.add('mob-active');np.classList.remove('mob-active');
+    t1.classList.add('active');t2.classList.remove('active');
+  } else {
+    np.classList.add('mob-active');tp.classList.remove('mob-active');
+    t2.classList.add('active');t1.classList.remove('active');
+  }
+}
+function focusAddTask(){
+  if(isMobile()){
+    mobSwitchTab('tasks');
+    setTimeout(()=>{const el=document.getElementById('taskInput');if(el)el.focus();},100);
+  }
+}
+function showMobSync(){
+  const existing=document.getElementById('mobSyncModal');if(existing)existing.remove();
+  const div=document.createElement('div');div.id='mobSyncModal';
+  div.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:400;display:flex;align-items:flex-end;justify-content:center';
+  div.innerHTML=`<div style="background:var(--surface);border-radius:var(--radius) var(--radius) 0 0;padding:20px;width:100%;display:flex;flex-direction:column;gap:12px">
+    <div style="font-size:14px;font-weight:500">Sync settings</div>
+    <input style="font-family:var(--mono);font-size:12px;padding:8px 10px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg);color:var(--text);width:100%;outline:none" id="mobUrlInput" placeholder="Paste Apps Script URL..." value="${esc(scriptUrl)}"/>
+    <div style="display:flex;gap:8px">
+      <button class="btn dark" style="flex:1" onclick="mobConnectSheet()">Connect</button>
+      <button class="btn" style="flex:1" onclick="loadFromSheetJSONP();document.getElementById('mobSyncModal').remove()">↺ Load</button>
+      <button class="btn" onclick="document.getElementById('mobSyncModal').remove()">Cancel</button>
+    </div>
+    <div style="font-size:11px;color:var(--text3);text-align:center">Sync status: <span id="mobSyncStatus">${syncStatus==='ok'?'Saved':syncStatus==='err'?'Error':scriptUrl?'Connected':'Not connected'}</span></div>
+  </div>`;
+  document.body.appendChild(div);
+  setTimeout(()=>document.getElementById('mobUrlInput').focus(),100);
+}
+function mobConnectSheet(){
+  const url=document.getElementById('mobUrlInput').value.trim();if(!url)return;
+  scriptUrl=url;localStorage.setItem('ws_script_url',url);
+  document.getElementById('mobSyncModal').remove();
+  setSyncBadge('busy');loadFromSheetJSONP();
+}
+
+// close sidebar when project selected on mobile
+const _selProj=selProj;
+selProj=function(id){
+  _selProj(id);
+  if(isMobile()){
+    const sb=document.getElementById('sidebar');
+    const ov=document.getElementById('sidebarOverlay');
+    sb.classList.remove('open');ov.classList.remove('show');
+  }
+};
 
 // TOAST
 function showToast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2200)}
