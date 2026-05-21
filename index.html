@@ -1347,14 +1347,25 @@ function loadFromSheetJSONP(){
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='hidden'&&scriptUrl){
     clearTimeout(saveTimer);
-    // Use sendBeacon for reliable background save
     const data=JSON.stringify({action:'save',projects:state.projects});
     if(navigator.sendBeacon){navigator.sendBeacon(scriptUrl,data);}
     else{fetch(scriptUrl,{method:'POST',mode:'no-cors',body:data}).catch(()=>{})}
   }
+  // When coming back into view (switching back to this tab/app), reload from Sheets
+  if(document.visibilityState==='visible'&&scriptUrl){
+    // only reload if we've been away for more than 30 seconds
+    const now=Date.now();
+    if(!window._lastVisible||(now-window._lastVisible)>30000){
+      loadFromSheetJSONP();
+    }
+    window._lastVisible=now;
+  }
 });
+window._lastVisible=Date.now();
 
 render();
-if(scriptUrl){setSyncBadge('busy');setTimeout(loadFromSheetJSONP,400)}</script>
+// Always auto-load from Sheets on page open if URL is stored
+if(scriptUrl){setSyncBadge('busy');setTimeout(loadFromSheetJSONP,400)}
+else{setSyncBadge('none');}</script>
 </body>
 </html>
