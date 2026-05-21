@@ -224,8 +224,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
         </div>
         <div id="importArea" style="display:none">
           <div class="import-area">
-            <div class="import-hint" style="font-size:12px;color:var(--text2)">Paste any outline, numbered list, or copied text — numbers, bullets, headers and code blocks are all handled automatically</div>
-            <textarea class="import-ta" id="importTa" placeholder="1. Click Edit&#10;2. Go to Schedule&#10;3. Change start time&#10;&#10;Or paste any copied text from Notion, docs, or chat"></textarea>
+            <div class="import-hint" style="font-size:12px;color:var(--text2)">Use <strong>## Phase Name</strong> to create phases, then tasks and subtasks under each. Or paste any outline without phases.</div>
+            <textarea class="import-ta" id="importTa" placeholder="## Phase One&#10;Task one&#10;  Subtask&#10;Task two&#10;&#10;## Phase Two&#10;Task three"></textarea>
             <div class="import-row">
               <span class="import-hint">Click Preview to see how it will be parsed</span>
               <button class="btn sm" onclick="cancelImport()">Cancel</button>
@@ -342,44 +342,57 @@ function switchTab(t){
 function toggleImport(){showImport=!showImport;document.getElementById('importArea').style.display=showImport?'block':'none'}
 function cancelImport(){showImport=false;document.getElementById('importArea').style.display='none';document.getElementById('importTa').value='';document.getElementById('importPreview').innerHTML='';document.getElementById('importPreviewWrap').style.display='none';}
 
-function parseOutline(raw){
+// Returns array of {phase, tasks} groups. If no ## markers, one group with phase=null
+function parseOutlineWithPhases(raw){
   const lines=raw.split('\n');
-  const tasks=[];
-  let lastTask=null;
-  let inCode=false,codeLines=[];
-  let pendingNote='';
-  const flush=()=>{if(pendingNote.trim()&&lastTask){lastTask.note=(lastTask.note?lastTask.note+'\n':'')+pendingNote.trim();pendingNote='';}};
-  const newTask=(text)=>{flush();const t={id:'t'+Date.now()+uid(),text,type:'task',done:false,highlighted:false,subtasks:[],note:'',files:[]};tasks.push(t);lastTask=t;return t;};
-  const newSub=(text)=>{if(!lastTask)newTask(text);else lastTask.subtasks.push({id:'s'+Date.now()+uid(),text,done:false});};
+  const groups=[];
+  let currentGroup=null;
+
+  const startGroup=(phaseName)=>{
+    currentGroup={phase:phaseName,tasks:[],lastTask:null,inCode:false,codeLines:[],pendingNote:''};
+    groups.push(currentGroup);
+  };
+  // start a default group for content before any ## line
+  startGroup(null);
+
+  const flush=(g)=>{if(g.pendingNote.trim()&&g.lastTask){g.lastTask.note=(g.lastTask.note?g.lastTask.note+'\n':'')+g.pendingNote.trim();g.pendingNote='';}};
+  const newTask=(g,text)=>{flush(g);const t={id:'t'+Date.now()+uid(),text,type:'task',done:false,highlighted:false,subtasks:[],note:'',files:[]};g.tasks.push(t);g.lastTask=t;return t;};
+  const newSub=(g,text)=>{if(!g.lastTask)newTask(g,text);else g.lastTask.subtasks.push({id:'s'+Date.now()+uid(),text,done:false});};
 
   lines.forEach(line=>{
-    // code fences
-    if(/^```/.test(line.trim())){
-      if(inCode){
-        const code=codeLines.join('\n').trim();
-        if(code&&lastTask){
-          // each non-empty line in code block → subtask (values like "9:05 AM", "Saved Search ID = 642")
-          codeLines.filter(l=>l.trim()).forEach(l=>newSub(l.trim()));
-        }
-        codeLines=[];inCode=false;
-      } else {inCode=true;codeLines=[];}
+    const g=currentGroup;
+
+    // ## Phase marker — start new group
+    if(/^##\s+/.test(line.trim())){
+      flush(g);
+      const phaseName=line.trim().replace(/^##\s+/,'').replace(/:$/,'').trim();
+      startGroup(phaseName);
       return;
     }
-    if(inCode){codeLines.push(line);return;}
-    if(!line.trim()){flush();return;}
+
+    // code fences
+    if(/^```/.test(line.trim())){
+      if(g.inCode){
+        const code=g.codeLines.join('\n').trim();
+        if(code&&g.lastTask){g.codeLines.filter(l=>l.trim()).forEach(l=>newSub(g,l.trim()));}
+        g.codeLines=[];g.inCode=false;
+      } else {g.inCode=true;g.codeLines=[];}
+      return;
+    }
+    if(g.inCode){g.codeLines.push(line);return;}
+    if(!line.trim()){flush(g);return;}
 
     const trimmed=line.trim();
     const indent=line.search(/\S/);
 
-    // markdown headers
-    if(/^#{1,3}\s/.test(trimmed)){newTask(trimmed.replace(/^#+\s*/,'').replace(/:$/,''));return;}
+    // single # = top-level task (not phase)
+    if(/^#\s/.test(trimmed)){newTask(g,trimmed.replace(/^#\s*/,'').replace(/:$/,''));return;}
 
-    // numbered: "1." "1)" "1.  " — even with no indent (clipboard strips indent)
+    // numbered items
     const numMatch=trimmed.match(/^(\d+)[\.\)]\s+(.*)/);
     if(numMatch){
       const text=numMatch[2].trim();if(!text)return;
-      // if indent >= 3, treat as subtask; else always new task
-      if(indent>=3&&lastTask)newSub(text);else newTask(text);
+      if(indent>=3&&g.lastTask)newSub(g,text);else newTask(g,text);
       return;
     }
 
@@ -387,62 +400,98 @@ function parseOutline(raw){
     const bullMatch=trimmed.match(/^[-\*\+]\s+(.*)/);
     if(bullMatch){
       const text=bullMatch[1].trim();if(!text)return;
-      if(indent>=2&&lastTask)newSub(text);else newTask(text);
+      if(indent>=2&&g.lastTask)newSub(g,text);else newTask(g,text);
       return;
     }
 
-    // letter lists: "a." "b)"
+    // letter lists
     const alphaMatch=trimmed.match(/^[a-z][\.\)]\s+(.*)/i);
-    if(alphaMatch){newSub(alphaMatch[1].trim());return;}
+    if(alphaMatch){newSub(g,alphaMatch[1].trim());return;}
 
-    // colon-terminated short lines → section header task
+    // colon-terminated short header → task
     if(/^[A-Za-z][^:\n]{0,50}:$/.test(trimmed)&&trimmed.split(' ').length<=7){
-      newTask(trimmed.replace(/:$/,''));return;
+      newTask(g,trimmed.replace(/:$/,''));return;
     }
 
-    // short standalone lines (≤60 chars, no trailing punctuation) → new task
+    // short standalone line → task
     if(trimmed.length<=80&&!/[.!]$/.test(trimmed)&&trimmed.split(' ').length<=12){
-      if(!lastTask||indent===0){newTask(trimmed);return;}
+      if(!g.lastTask||indent===0){newTask(g,trimmed);return;}
     }
 
-    // prose continuation → note on current task
-    if(lastTask)pendingNote+=(pendingNote?' ':'')+trimmed;
-    else newTask(trimmed);
+    // prose → note
+    if(g.lastTask)g.pendingNote+=(g.pendingNote?' ':'')+trimmed;
+    else newTask(g,trimmed);
   });
-  flush();
-  return tasks;
+  flush(currentGroup);
+
+  // remove empty default group if nothing before first ##
+  return groups.filter(g=>g.tasks.length>0||(g.phase&&g.phase!==null));
+}
+
+// legacy wrapper for single-phase parsing
+function parseOutline(raw){
+  const groups=parseOutlineWithPhases(raw);
+  const all=[];groups.forEach(g=>all.push(...g.tasks));
+  return all;
 }
 
 function previewImport(){
   const raw=document.getElementById('importTa').value;
   if(!raw.trim())return;
-  const tasks=parseOutline(raw);
+  const groups=parseOutlineWithPhases(raw);
   const wrap=document.getElementById('importPreviewWrap');
   const prev=document.getElementById('importPreview');
   wrap.style.display='block';
-  if(!tasks.length){prev.innerHTML='<div style="font-size:12px;color:var(--text3)">Nothing to import</div>';return;}
-  prev.innerHTML=`<div style="font-size:11px;color:var(--text3);margin-bottom:6px">${tasks.length} tasks detected — review below then click Import</div>`
-    +tasks.map((t,i)=>`
-    <div style="padding:5px 8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;margin-bottom:4px;font-size:12px">
-      <div style="display:flex;gap:6px;align-items:center">
-        <span style="color:var(--text3);font-size:10px;min-width:16px">${i+1}</span>
-        <span style="flex:1;color:var(--text)">${esc(t.text)}</span>
-      </div>
-      ${t.subtasks.map(s=>`<div style="padding:2px 0 0 22px;color:var(--text2);font-size:11px">↳ ${esc(s.text)}</div>`).join('')}
-      ${t.note?`<div style="padding:2px 0 0 22px;color:var(--text3);font-size:11px;font-style:italic">note: ${esc(t.note.slice(0,80))}${t.note.length>80?'…':''}</div>`:''}
-    </div>`).join('');
+  const hasPhases=groups.some(g=>g.phase);
+  const totalTasks=groups.reduce((n,g)=>n+g.tasks.length,0);
+  if(!totalTasks){prev.innerHTML='<div style="font-size:12px;color:var(--text3)">Nothing to import</div>';return;}
+  prev.innerHTML=`<div style="font-size:11px;color:var(--text3);margin-bottom:8px">${hasPhases?groups.filter(g=>g.phase).length+' phases, ':''} ${totalTasks} tasks detected — review then click Import</div>`
+    +groups.filter(g=>g.tasks.length).map(g=>`
+    ${g.phase?`<div style="font-size:11px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:#7F77DD;padding:6px 0 4px">⬡ Phase: ${esc(g.phase)}</div>`:''}
+    ${g.tasks.map((t,i)=>`
+      <div style="padding:5px 8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;margin-bottom:3px;font-size:12px">
+        <div style="display:flex;gap:6px;align-items:center">
+          <span style="color:var(--text3);font-size:10px;min-width:16px">${i+1}</span>
+          <span style="flex:1;color:var(--text)">${esc(t.text)}</span>
+        </div>
+        ${t.subtasks.map(s=>`<div style="padding:2px 0 0 22px;color:var(--text2);font-size:11px">↳ ${esc(s.text)}</div>`).join('')}
+        ${t.note?`<div style="padding:2px 0 0 22px;color:var(--text3);font-size:11px;font-style:italic">note: ${esc(t.note.slice(0,80))}${t.note.length>80?'…':''}</div>`:''}
+      </div>`).join('')}
+    `).join('');
 }
 
 function runImport(){
   const raw=document.getElementById('importTa').value;
   if(!raw.trim())return;
-  const tasks=parseOutline(raw);
-  if(!tasks.length){showToast('Nothing found to import');return;}
-  const p=getProj();const ph=getPhaseKey();
-  if(!p.tasks[ph])p.tasks[ph]=[];
-  p.tasks[ph].push(...tasks);
-  cancelImport();renderTasks(p);scheduleSave();
-  showToast('Imported '+tasks.length+' tasks');
+  const groups=parseOutlineWithPhases(raw);
+  const totalTasks=groups.reduce((n,g)=>n+g.tasks.length,0);
+  if(!totalTasks){showToast('Nothing found to import');return;}
+  const p=getProj();
+  let phasesCreated=0;
+  let tasksImported=0;
+
+  groups.forEach(g=>{
+    // determine target phase
+    let targetPhase=getPhaseKey();
+    if(g.phase){
+      if(!p.phases.includes(g.phase)){
+        // create the phase
+        p.phases.push(g.phase);
+        if(!p.phaseColors)p.phaseColors={};
+        p.phaseColors[g.phase]=PHASE_COLORS[p.phases.length%PHASE_COLORS.length];
+        p.notes[g.phase]=[];p.tasks[g.phase]=[];
+        phasesCreated++;
+      }
+      targetPhase=g.phase;
+      p.activePhase=p.phases.indexOf(targetPhase);
+    }
+    if(!p.tasks[targetPhase])p.tasks[targetPhase]=[];
+    p.tasks[targetPhase].push(...g.tasks);
+    tasksImported+=g.tasks.length;
+  });
+
+  cancelImport();render();scheduleSave();
+  showToast(`Imported ${tasksImported} tasks${phasesCreated?` across ${phasesCreated} new phases`:''}`);
 }
 
 // SEND TO CLAUDE
