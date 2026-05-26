@@ -305,7 +305,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
   <div class="spacer"></div>
   <input class="sync-url" id="urlInput" placeholder="Paste Apps Script URL to sync..."/>
   <button class="btn dark" onclick="connectSheet()">Connect</button>
-  <button class="btn" onclick="loadFromSheetJSONP()">↺ Load</button>
+  <button class="btn" onclick="loadFromSheets()">↺ Load</button>
   <span class="badge none" id="syncBadge">not connected</span>
 </div>
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
@@ -1248,7 +1248,7 @@ function showMobSync(){
     <input style="font-family:var(--mono);font-size:12px;padding:8px 10px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg);color:var(--text);width:100%;outline:none" id="mobUrlInput" placeholder="Paste Apps Script URL..." value="${esc(scriptUrl)}"/>
     <div style="display:flex;gap:8px">
       <button class="btn dark" style="flex:1" onclick="mobConnectSheet()">Connect</button>
-      <button class="btn" style="flex:1" onclick="loadFromSheetJSONP();document.getElementById('mobSyncModal').remove()">↺ Load</button>
+      <button class="btn" style="flex:1" onclick="loadFromSheets();document.getElementById('mobSyncModal').remove()">↺ Load</button>
       <button class="btn" onclick="document.getElementById('mobSyncModal').remove()">Cancel</button>
     </div>
     <div style="font-size:11px;color:var(--text3);text-align:center">Sync status: <span id="mobSyncStatus">${syncStatus==='ok'?'Saved':syncStatus==='err'?'Error':scriptUrl?'Connected':'Not connected'}</span></div>
@@ -1260,7 +1260,7 @@ function mobConnectSheet(){
   const url=document.getElementById('mobUrlInput').value.trim();if(!url)return;
   scriptUrl=url;localStorage.setItem('ws_script_url',url);
   document.getElementById('mobSyncModal').remove();
-  setSyncBadge('busy');loadFromSheetJSONP();
+  setSyncBadge('busy');loadFromSheets();
 }
 
 // close sidebar when project selected on mobile
@@ -1282,8 +1282,9 @@ function showLoading(msg){
   let el=document.getElementById('loadingScreen');
   if(!el){
     el=document.createElement('div');el.id='loadingScreen';
-    el.style.cssText='position:fixed;inset:0;background:var(--bg);z-index:600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px';
-    el.innerHTML=`<div style="font-size:28px">⟳</div><div id="loadingMsg" style="font-size:14px;color:var(--text2)"></div>`;
+    el.style.cssText='position:fixed;inset:0;background:var(--bg);z-index:600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px';
+    el.innerHTML=`<div style="font-size:32px;animation:spin 1s linear infinite">↻</div><div id="loadingMsg" style="font-size:14px;color:var(--text2)"></div>
+    <style>@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}</style>`;
     document.body.appendChild(el);
   }
   document.getElementById('loadingMsg').textContent=msg||'Loading...';
@@ -1292,123 +1293,158 @@ function hideLoading(){const el=document.getElementById('loadingScreen');if(el)e
 
 // EMPTY STATE
 function renderEmpty(){
-  document.getElementById('projList').innerHTML=`<div style="padding:16px 12px;font-size:12px;color:var(--text3);line-height:1.6">${scriptUrl?'Loading from Sheets...':'Paste your Apps Script URL above and click Connect to load your projects.'}</div>`;
-  document.getElementById('projTitleInput').value='';
-  document.getElementById('phaseBar').innerHTML='';
-  document.getElementById('taskList').innerHTML='<div class="empty">No project selected</div>';
-  document.getElementById('notesList').innerHTML='';
+  const hasSb=document.getElementById('projList');
+  if(hasSb)hasSb.innerHTML=`<div style="padding:16px 12px;font-size:12px;color:var(--text3);line-height:1.7">${scriptUrl?'Loading from Sheets...':'Paste your Apps Script URL above and click Connect.'}</div>`;
+  const pt=document.getElementById('projTitleInput');if(pt)pt.value='';
+  const pb=document.getElementById('phaseBar');if(pb)pb.innerHTML='';
+  const tl=document.getElementById('taskList');if(tl)tl.innerHTML='<div class="empty">No project selected</div>';
+  const nl=document.getElementById('notesList');if(nl)nl.innerHTML='';
 }
 
 // SYNC
+let _saveVersion=0;      // increments on every local change
+let _sheetsVersion=0;    // version we last loaded from Sheets
+let _isSaving=false;
+let _tabId='tab_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+
 function setSyncBadge(s){
   syncStatus=s;
   const el=document.getElementById('syncBadge');
-  if(el){el.className='badge '+s;el.textContent={ok:'saved',err:'sync error',busy:'syncing…',none:'not connected'}[s]||s;}
+  if(el){el.className='badge '+s;el.textContent={ok:'saved',err:'sync error',busy:'syncing…',none:'not connected',conflict:'reloading…'}[s]||s;}
 }
 
 function connectSheet(){
   const url=document.getElementById('urlInput').value.trim();if(!url)return;
   scriptUrl=url;localStorage.setItem('ws_script_url',url);
-  setSyncBadge('busy');loadFromSheetJSONP();
+  setSyncBadge('busy');loadFromSheets();
 }
 
 function scheduleSave(){
   if(!scriptUrl)return;
+  _saveVersion++;
   clearTimeout(saveTimer);
   setSyncBadge('busy');
-  const delay=isMobile()?300:1500;
-  saveTimer=setTimeout(pushToSheet,delay);
+  saveTimer=setTimeout(pushToSheet,1000);
 }
 
-// Save via JSONP so we can confirm it worked
 function pushToSheet(){
-  if(!scriptUrl)return;
+  if(!scriptUrl||_isSaving)return;
+  _isSaving=true;
   setSyncBadge('busy');
-  const cb='save_cb'+Date.now();
-  const payload=encodeURIComponent(JSON.stringify({action:'save',projects:state.projects}));
-  window[cb]=function(data){
-    if(data&&data.ok){setSyncBadge('ok');}
-    else{setSyncBadge('err');showToast('Save failed — check Apps Script deployment');}
-    delete window[cb];
-    const s=document.getElementById('save_script_'+cb);if(s)s.remove();
-  };
-  // POST via hidden form for reliability (bypasses CORS)
-  const form=document.createElement('form');
-  form.method='POST';form.action=scriptUrl;form.target='save_frame_'+cb;form.style.display='none';
-  const inp=document.createElement('input');inp.type='hidden';inp.name='data';inp.value=JSON.stringify({action:'save',projects:state.projects});
-  form.appendChild(inp);
-  const frame=document.createElement('iframe');frame.name='save_frame_'+cb;frame.style.display='none';
-  document.body.appendChild(frame);document.body.appendChild(form);
-  // also do fetch no-cors as backup
-  fetch(scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'save',projects:state.projects})})
-    .then(()=>{setSyncBadge('ok');delete window[cb];frame.remove();form.remove();})
-    .catch(()=>{setSyncBadge('err');frame.remove();form.remove();});
+  // Stamp the data with version + tabId so we can detect conflicts
+  const payload=JSON.stringify({
+    action:'save',
+    projects:state.projects,
+    version:_saveVersion,
+    tabId:_tabId,
+    savedAt:Date.now()
+  });
+  fetch(scriptUrl,{method:'POST',mode:'no-cors',body:payload})
+    .then(()=>{
+      setSyncBadge('ok');
+      _sheetsVersion=_saveVersion;
+      _isSaving=false;
+      // Broadcast to other tabs that data changed
+      try{localStorage.setItem('ws_last_save',JSON.stringify({tabId:_tabId,version:_saveVersion,t:Date.now()}));}catch(e){}
+    })
+    .catch(()=>{setSyncBadge('err');_isSaving=false;});
 }
 
-function loadFromSheetJSONP(){
+function normalizeProjects(projects){
+  return projects.map(p=>{
+    if(!p.activePhase)p.activePhase=0;
+    if(!p.phaseColors)p.phaseColors={};
+    if(!p.status)p.status='active';
+    p.phases.forEach(ph=>{
+      if(!p.tasks[ph])p.tasks[ph]=[];
+      if(!p.notes[ph])p.notes[ph]=[];
+      p.tasks[ph].forEach(t=>{
+        if(!t.subtasks)t.subtasks=[];
+        if(!t.note)t.note='';
+        if(!t.type)t.type='task';
+        if(t.highlighted===undefined)t.highlighted=false;
+        if(!t.files)t.files=[];
+      });
+      p.notes[ph]=p.notes[ph].map(n=>typeof n==='string'?{id:'n'+Math.random(),text:n,type:'note'}:n);
+    });
+    return p;
+  });
+}
+
+function loadFromSheets(silent){
   if(!scriptUrl){setSyncBadge('none');renderEmpty();return;}
-  setSyncBadge('busy');
-  if(!state.projects.length)showLoading('Loading your workspace...');
-  const cb='load_cb'+Date.now();
+  if(!silent)setSyncBadge('busy');
+  if(!state.projects.length&&!silent)showLoading('Loading your workspace...');
+  const cb='load_'+Date.now()+'_'+Math.random().toString(36).slice(2);
   const timeout=setTimeout(()=>{
     hideLoading();setSyncBadge('err');
-    showToast('Could not reach Sheets — check your Apps Script URL');
+    if(!silent)showToast('Could not reach Sheets — check your Apps Script URL');
     delete window[cb];
     if(!state.projects.length)renderEmpty();
-  },12000);
+  },15000);
   window[cb]=function(data){
     clearTimeout(timeout);hideLoading();
     if(data&&data.projects&&data.projects.length){
-      data.projects.forEach(p=>{
-        if(!p.activePhase)p.activePhase=0;
-        if(!p.phaseColors)p.phaseColors={};
-        if(!p.status)p.status='active';
-        p.phases.forEach(ph=>{
-          if(!p.tasks[ph])p.tasks[ph]=[];
-          if(!p.notes[ph])p.notes[ph]=[];
-          p.tasks[ph].forEach(t=>{
-            if(!t.subtasks)t.subtasks=[];
-            if(!t.note)t.note='';
-            if(!t.type)t.type='task';
-            if(t.highlighted===undefined)t.highlighted=false;
-            if(!t.files)t.files=[];
-          });
-          p.notes[ph]=p.notes[ph].map(n=>typeof n==='string'?{id:'n'+Math.random(),text:n,type:'note'}:n);
-        });
-      });
-      state.projects=data.projects;
-      state.activeProject=state.projects[0].id;
-      setSyncBadge('ok');render();
-    } else {
-      // Sheets is empty or returned nothing — start fresh, don't overwrite with demo data
+      const loaded=normalizeProjects(data.projects);
+      // Preserve active project/phase selection if possible
+      const prevActive=state.activeProject;
+      state.projects=loaded;
+      const stillExists=state.projects.find(p=>p.id===prevActive);
+      state.activeProject=stillExists?prevActive:state.projects[0].id;
+      _sheetsVersion=_saveVersion; // in sync
       setSyncBadge('ok');
-      if(!state.projects.length){renderEmpty();showToast('Connected — add your first project below');}
+      render();
+    } else {
+      setSyncBadge('ok');
+      if(!state.projects.length){renderEmpty();if(!silent)showToast('Connected — add your first project below');}
       else render();
     }
     delete window[cb];
   };
   const s=document.createElement('script');
-  s.src=scriptUrl+'?action=load&callback='+cb+'&t='+Date.now(); // cache bust
+  s.src=scriptUrl+'?action=load&callback='+cb+'&t='+Date.now();
   s.onerror=()=>{
     clearTimeout(timeout);hideLoading();setSyncBadge('err');
-    showToast('Could not load — check Apps Script URL and deployment');
+    if(!silent)showToast('Could not load — check your Apps Script URL');
     delete window[cb];
     if(!state.projects.length)renderEmpty();
   };
   document.head.appendChild(s);
 }
 
-// Save when leaving/backgrounding
+// Listen for saves from OTHER tabs via localStorage
+window.addEventListener('storage',e=>{
+  if(e.key==='ws_last_save'&&scriptUrl){
+    try{
+      const info=JSON.parse(e.newValue);
+      // Another tab saved — reload silently so we're up to date before our next save
+      if(info.tabId!==_tabId){
+        setSyncBadge('conflict');
+        // Wait a beat then reload — don't interrupt user mid-type
+        clearTimeout(saveTimer);
+        setTimeout(()=>loadFromSheets(true),1500);
+      }
+    }catch(ex){}
+  }
+});
+
+// Page visibility — save on hide, reload on show
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='hidden'&&scriptUrl&&state.projects.length){
     clearTimeout(saveTimer);
-    const data=JSON.stringify({action:'save',projects:state.projects});
-    if(navigator.sendBeacon){navigator.sendBeacon(scriptUrl,data);}
-    else{fetch(scriptUrl,{method:'POST',mode:'no-cors',body:data}).catch(()=>{})}
+    if(_saveVersion>_sheetsVersion){
+      // Unsaved changes — push now
+      navigator.sendBeacon
+        ?navigator.sendBeacon(scriptUrl,JSON.stringify({action:'save',projects:state.projects,tabId:_tabId,savedAt:Date.now()}))
+        :fetch(scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'save',projects:state.projects})}).catch(()=>{});
+      try{localStorage.setItem('ws_last_save',JSON.stringify({tabId:_tabId,version:_saveVersion,t:Date.now()}));}catch(e){}
+    }
   }
   if(document.visibilityState==='visible'&&scriptUrl){
     const now=Date.now();
-    if(!window._lastVisible||(now-window._lastVisible)>30000){loadFromSheetJSONP();}
+    if(!window._lastVisible||(now-window._lastVisible)>20000){
+      loadFromSheets(false);
+    }
     window._lastVisible=now;
   }
 });
@@ -1418,7 +1454,7 @@ window._lastVisible=Date.now();
 render();
 if(scriptUrl){
   setSyncBadge('busy');
-  loadFromSheetJSONP();
+  loadFromSheets();
 } else {
   setSyncBadge('none');
   renderEmpty();
