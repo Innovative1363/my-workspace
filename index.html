@@ -415,29 +415,8 @@ let dragSrcId=null;
 let showImport=false;
 
 let state={
-  projects:[
-    {id:'p1',name:'CRM Lead Assist',color:'#7F77DD',
-     phases:['Planning','v1 Build','v2 Tweaks','Testing','Live'],
-     phaseColors:{'Planning':'#888780','v1 Build':'#7F77DD','v2 Tweaks':'#D85A30','Testing':'#378ADD','Live':'#1D9E75'},
-     activePhase:0,
-     notes:{'Planning':[{id:'n1',text:'Checked Claude API rate limits',type:'note'}],'v1 Build':[{id:'n2',text:'Prompt structure done',type:'note'}],'v2 Tweaks':[],'Testing':[{id:'n3',text:'Test with real leads first',type:'question'}],'Live':[]},
-     tasks:{'Planning':[
-       {id:'t1',text:'Map out CRM fields',type:'task',done:true,highlighted:false,subtasks:[],note:'',files:[]},
-       {id:'t2',text:'Define prompt template',type:'task',done:true,highlighted:false,subtasks:[{id:'s1',text:'Review sample outputs',done:true}],note:'',files:[]}
-     ],'v1 Build':[
-       {id:'t3',text:'Build lead intake form',type:'task',done:false,highlighted:true,subtasks:[{id:'s2',text:'Add validation',done:false},{id:'s3',text:'Mobile layout',done:false}],note:'Use existing design system colors',files:[]},
-       {id:'t4',text:'Connect Claude API',type:'task',done:true,highlighted:false,subtasks:[],note:'',files:[]}
-     ],'v2 Tweaks':[{id:'t5',text:'Add follow-up suggestion logic',type:'task',done:false,highlighted:false,subtasks:[],note:'',files:[]}],
-     'Testing':[{id:'t6',text:'Run 10 test leads',type:'task',done:false,highlighted:false,subtasks:[],note:'',files:[]},{id:'t7',text:'How do we handle duplicate leads?',type:'question',done:false,highlighted:false,subtasks:[],note:'',files:[]}],
-     'Live':[]}},
-    {id:'p2',name:'Flyer Designs',color:'#D85A30',phases:['Ideas','Drafts','Review'],phaseColors:{'Ideas':'#888780','Drafts':'#7F77DD','Review':'#1D9E75'},activePhase:0,
-     notes:{'Ideas':[{id:'n4',text:'Summer event — bold headline, date prominent',type:'note'}],'Drafts':[],'Review':[]},
-     tasks:{'Ideas':[{id:'t8',text:'Collect brand colors',type:'task',done:false,highlighted:false,subtasks:[],note:'',files:[]}],'Drafts':[],'Review':[]}},
-    {id:'p3',name:'Notes',color:'#639922',phases:['General'],phaseColors:{'General':'#888780'},activePhase:0,notes:{'General':[]},tasks:{'General':[]}},
-    {id:'p4',name:'AR Aging',color:'#378ADD',phases:['Planning'],phaseColors:{'Planning':'#888780'},activePhase:0,notes:{'Planning':[]},
-     tasks:{'Planning':[{id:'t9',text:'Get 10 more customers',type:'task',done:false,highlighted:false,subtasks:[],note:'',files:[]}]}}
-  ],
-  activeProject:'p1',addingProj:false,newProjName:'',newProjColor:COLORS[0]
+  projects:[],
+  activeProject:null,addingProj:false,newProjName:'',newProjColor:COLORS[0]
 };
 
 function getProj(){return state.projects.find(p=>p.id===state.activeProject)}
@@ -716,7 +695,7 @@ function cycleStatus(e,pid){
 function render(){
   const p=getProj();
   renderSidebar();
-  if(!p)return;
+  if(!p){renderEmpty();return;}
   document.getElementById('projTitleInput').value=p.name;
   renderPhases(p);renderTasks(p);renderNotes(p);
   if(scriptUrl)document.getElementById('urlInput').value=scriptUrl;
@@ -1298,74 +1277,151 @@ selProj=function(id){
 // TOAST
 function showToast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2200)}
 
+// LOADING SCREEN
+function showLoading(msg){
+  let el=document.getElementById('loadingScreen');
+  if(!el){
+    el=document.createElement('div');el.id='loadingScreen';
+    el.style.cssText='position:fixed;inset:0;background:var(--bg);z-index:600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px';
+    el.innerHTML=`<div style="font-size:28px">⟳</div><div id="loadingMsg" style="font-size:14px;color:var(--text2)"></div>`;
+    document.body.appendChild(el);
+  }
+  document.getElementById('loadingMsg').textContent=msg||'Loading...';
+}
+function hideLoading(){const el=document.getElementById('loadingScreen');if(el)el.remove();}
+
+// EMPTY STATE
+function renderEmpty(){
+  document.getElementById('projList').innerHTML=`<div style="padding:16px 12px;font-size:12px;color:var(--text3);line-height:1.6">${scriptUrl?'Loading from Sheets...':'Paste your Apps Script URL above and click Connect to load your projects.'}</div>`;
+  document.getElementById('projTitleInput').value='';
+  document.getElementById('phaseBar').innerHTML='';
+  document.getElementById('taskList').innerHTML='<div class="empty">No project selected</div>';
+  document.getElementById('notesList').innerHTML='';
+}
+
 // SYNC
 function setSyncBadge(s){
   syncStatus=s;
   const el=document.getElementById('syncBadge');
   if(el){el.className='badge '+s;el.textContent={ok:'saved',err:'sync error',busy:'syncing…',none:'not connected'}[s]||s;}
 }
-function connectSheet(){const url=document.getElementById('urlInput').value.trim();if(!url)return;scriptUrl=url;localStorage.setItem('ws_script_url',url);setSyncBadge('busy');loadFromSheetJSONP()}
+
+function connectSheet(){
+  const url=document.getElementById('urlInput').value.trim();if(!url)return;
+  scriptUrl=url;localStorage.setItem('ws_script_url',url);
+  setSyncBadge('busy');loadFromSheetJSONP();
+}
+
 function scheduleSave(){
   if(!scriptUrl)return;
   clearTimeout(saveTimer);
   setSyncBadge('busy');
-  // on mobile save immediately, on desktop small delay
-  const delay=isMobile()?200:1800;
+  const delay=isMobile()?300:1500;
   saveTimer=setTimeout(pushToSheet,delay);
 }
-async function pushToSheet(){
+
+// Save via JSONP so we can confirm it worked
+function pushToSheet(){
   if(!scriptUrl)return;
-  try{
-    await fetch(scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'save',projects:state.projects})});
-    setSyncBadge('ok');
-  }catch(e){setSyncBadge('err');}
-}
-function loadFromSheetJSONP(){
-  if(!scriptUrl){setSyncBadge('none');return}
   setSyncBadge('busy');
-  const cb='cb'+Date.now();
+  const cb='save_cb'+Date.now();
+  const payload=encodeURIComponent(JSON.stringify({action:'save',projects:state.projects}));
   window[cb]=function(data){
-    if(data.projects&&data.projects.length){
+    if(data&&data.ok){setSyncBadge('ok');}
+    else{setSyncBadge('err');showToast('Save failed — check Apps Script deployment');}
+    delete window[cb];
+    const s=document.getElementById('save_script_'+cb);if(s)s.remove();
+  };
+  // POST via hidden form for reliability (bypasses CORS)
+  const form=document.createElement('form');
+  form.method='POST';form.action=scriptUrl;form.target='save_frame_'+cb;form.style.display='none';
+  const inp=document.createElement('input');inp.type='hidden';inp.name='data';inp.value=JSON.stringify({action:'save',projects:state.projects});
+  form.appendChild(inp);
+  const frame=document.createElement('iframe');frame.name='save_frame_'+cb;frame.style.display='none';
+  document.body.appendChild(frame);document.body.appendChild(form);
+  // also do fetch no-cors as backup
+  fetch(scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'save',projects:state.projects})})
+    .then(()=>{setSyncBadge('ok');delete window[cb];frame.remove();form.remove();})
+    .catch(()=>{setSyncBadge('err');frame.remove();form.remove();});
+}
+
+function loadFromSheetJSONP(){
+  if(!scriptUrl){setSyncBadge('none');renderEmpty();return;}
+  setSyncBadge('busy');
+  if(!state.projects.length)showLoading('Loading your workspace...');
+  const cb='load_cb'+Date.now();
+  const timeout=setTimeout(()=>{
+    hideLoading();setSyncBadge('err');
+    showToast('Could not reach Sheets — check your Apps Script URL');
+    delete window[cb];
+    if(!state.projects.length)renderEmpty();
+  },12000);
+  window[cb]=function(data){
+    clearTimeout(timeout);hideLoading();
+    if(data&&data.projects&&data.projects.length){
       data.projects.forEach(p=>{
-        if(!p.activePhase)p.activePhase=0;if(!p.phaseColors)p.phaseColors={};
+        if(!p.activePhase)p.activePhase=0;
+        if(!p.phaseColors)p.phaseColors={};
+        if(!p.status)p.status='active';
         p.phases.forEach(ph=>{
-          (p.tasks[ph]||[]).forEach(t=>{if(!t.subtasks)t.subtasks=[];if(!t.note)t.note='';if(!t.type)t.type='task';if(t.highlighted===undefined)t.highlighted=false;if(!t.files)t.files=[]});
+          if(!p.tasks[ph])p.tasks[ph]=[];
           if(!p.notes[ph])p.notes[ph]=[];
+          p.tasks[ph].forEach(t=>{
+            if(!t.subtasks)t.subtasks=[];
+            if(!t.note)t.note='';
+            if(!t.type)t.type='task';
+            if(t.highlighted===undefined)t.highlighted=false;
+            if(!t.files)t.files=[];
+          });
           p.notes[ph]=p.notes[ph].map(n=>typeof n==='string'?{id:'n'+Math.random(),text:n,type:'note'}:n);
         });
       });
-      state.projects=data.projects;state.activeProject=state.projects[0].id;
+      state.projects=data.projects;
+      state.activeProject=state.projects[0].id;
+      setSyncBadge('ok');render();
+    } else {
+      // Sheets is empty or returned nothing — start fresh, don't overwrite with demo data
+      setSyncBadge('ok');
+      if(!state.projects.length){renderEmpty();showToast('Connected — add your first project below');}
+      else render();
     }
-    setSyncBadge('ok');render();delete window[cb];
+    delete window[cb];
   };
-  const s=document.createElement('script');s.src=scriptUrl+'?action=load&callback='+cb;
-  s.onerror=()=>{setSyncBadge('err');delete window[cb]};
+  const s=document.createElement('script');
+  s.src=scriptUrl+'?action=load&callback='+cb+'&t='+Date.now(); // cache bust
+  s.onerror=()=>{
+    clearTimeout(timeout);hideLoading();setSyncBadge('err');
+    showToast('Could not load — check Apps Script URL and deployment');
+    delete window[cb];
+    if(!state.projects.length)renderEmpty();
+  };
   document.head.appendChild(s);
 }
 
-// Save when user switches tabs or minimizes (catches mobile background)
+// Save when leaving/backgrounding
 document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='hidden'&&scriptUrl){
+  if(document.visibilityState==='hidden'&&scriptUrl&&state.projects.length){
     clearTimeout(saveTimer);
     const data=JSON.stringify({action:'save',projects:state.projects});
     if(navigator.sendBeacon){navigator.sendBeacon(scriptUrl,data);}
     else{fetch(scriptUrl,{method:'POST',mode:'no-cors',body:data}).catch(()=>{})}
   }
-  // When coming back into view (switching back to this tab/app), reload from Sheets
   if(document.visibilityState==='visible'&&scriptUrl){
-    // only reload if we've been away for more than 30 seconds
     const now=Date.now();
-    if(!window._lastVisible||(now-window._lastVisible)>30000){
-      loadFromSheetJSONP();
-    }
+    if(!window._lastVisible||(now-window._lastVisible)>30000){loadFromSheetJSONP();}
     window._lastVisible=now;
   }
 });
 window._lastVisible=Date.now();
 
+// STARTUP
 render();
-// Always auto-load from Sheets on page open if URL is stored
-if(scriptUrl){setSyncBadge('busy');setTimeout(loadFromSheetJSONP,400)}
-else{setSyncBadge('none');}</script>
+if(scriptUrl){
+  setSyncBadge('busy');
+  loadFromSheetJSONP();
+} else {
+  setSyncBadge('none');
+  renderEmpty();
+}</script>
 </body>
 </html>
