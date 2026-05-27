@@ -1115,8 +1115,80 @@ function showProjCtx(e,pid){
     'sep',
     ...PROJ_STATUSES.map(s=>({label:(s.key===(p.status||'active')?'✓ ':'')+s.label,fn:`function(){const p=state.projects.find(p=>p.id==='${pid}');if(p){p.status='${s.key}';renderSidebar();scheduleSave();}}`})),
     'sep',
+    {label:'⬇ Export project',fn:`function(){showExportMenu('${pid}')}`},
+    'sep',
     {label:'🗑 Delete project',fn:`function(){deleteProject('${pid}')}`,danger:true}
   ]);
+}
+
+function showExportMenu(pid){
+  const p=state.projects.find(pr=>pr.id===pid)||getProj();
+  if(!p)return;closeCtx();
+  const existing=document.getElementById('exportMenuModal');if(existing)existing.remove();
+  const div=document.createElement('div');div.id='exportMenuModal';
+  div.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:400;display:flex;align-items:center;justify-content:center';
+  div.innerHTML=`<div style="background:var(--surface);border-radius:var(--radius);padding:22px 24px;width:340px;display:flex;flex-direction:column;gap:10px;box-shadow:0 12px 40px rgba(0,0,0,.2)">
+    <div style="font-size:15px;font-weight:500">Export: ${esc(p.name)}</div>
+    <p style="font-size:12px;color:var(--text2);line-height:1.5">Choose a format to download.</p>
+    <button class="btn" style="justify-content:flex-start;gap:10px;padding:10px 12px" onclick="exportProject('${pid}','markdown');document.getElementById('exportMenuModal').remove()">
+      <span style="font-size:18px">📄</span>
+      <div style="text-align:left"><div style="font-size:13px;font-weight:500">Markdown (.md)</div><div style="font-size:11px;color:var(--text3)">Best for sharing or pasting into Claude</div></div>
+    </button>
+    <button class="btn" style="justify-content:flex-start;gap:10px;padding:10px 12px" onclick="exportProject('${pid}','csv');document.getElementById('exportMenuModal').remove()">
+      <span style="font-size:18px">📊</span>
+      <div style="text-align:left"><div style="font-size:13px;font-weight:500">Spreadsheet (.csv)</div><div style="font-size:11px;color:var(--text3)">Open in Excel or Google Sheets</div></div>
+    </button>
+    <button class="btn" style="justify-content:flex-start;gap:10px;padding:10px 12px" onclick="exportProject('${pid}','json');document.getElementById('exportMenuModal').remove()">
+      <span style="font-size:18px">💾</span>
+      <div style="text-align:left"><div style="font-size:13px;font-weight:500">JSON backup (.json)</div><div style="font-size:11px;color:var(--text3)">Full backup of all data</div></div>
+    </button>
+    <button class="btn" onclick="document.getElementById('exportMenuModal').remove()">Cancel</button>
+  </div>`;
+  document.body.appendChild(div);
+}
+
+function exportProject(pid,format){
+  const p=state.projects.find(pr=>pr.id===pid)||getProj();
+  if(!p)return;
+  let content='',filename='',mime='';
+  if(format==='markdown'){
+    content=`# ${p.name}\n\n`;
+    p.phases.forEach(ph=>{
+      content+=`## ${ph}\n\n`;
+      const tasks=p.tasks[ph]||[];
+      const notes=(p.notes[ph]||[]);
+      tasks.forEach(t=>{
+        content+=`- [${t.done?'x':' '}] ${t.type==='question'?'**?** ':''}${t.text}\n`;
+        (t.subtasks||[]).forEach(s=>content+=`  - [${s.done?'x':' '}] ${s.text}\n`);
+        if(t.note)content+=`  > ${t.note}\n`;
+        if((t.files||[]).length)t.files.forEach(f=>content+=`  > 📎 [${f.name}](${f.url})\n`);
+      });
+      if(notes.length){content+=`\n**Notes:**\n`;notes.forEach(n=>content+=`> ${n.text}\n`);}
+      content+='\n';
+    });
+    filename=p.name.replace(/[^a-z0-9]/gi,'_')+'.md';mime='text/markdown';
+  }
+  if(format==='json'){
+    content=JSON.stringify(p,null,2);
+    filename=p.name.replace(/[^a-z0-9]/gi,'_')+'.json';mime='application/json';
+  }
+  if(format==='csv'){
+    const rows=[['Project','Phase','Type','Task','Subtask','Done','Note']];
+    p.phases.forEach(ph=>{
+      (p.tasks[ph]||[]).forEach(t=>{
+        rows.push([p.name,ph,t.type,t.text,'',t.done?'yes':'no',t.note||'']);
+        (t.subtasks||[]).forEach(s=>rows.push([p.name,ph,'subtask',t.text,s.text,s.done?'yes':'no','']));
+      });
+    });
+    content=rows.map(r=>r.map(c=>'"'+String(c||'').replace(/"/g,'""')+'"').join(',')).join('\n');
+    filename=p.name.replace(/[^a-z0-9]/gi,'_')+'.csv';mime='text/csv';
+  }
+  const blob=new Blob([content],{type:mime});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=filename;
+  document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},1000);
+  showToast('Exported '+filename);
 }
 
 // BRANCH
@@ -1450,11 +1522,11 @@ document.addEventListener('visibilitychange',()=>{
 });
 window._lastVisible=Date.now();
 
-// STARTUP
+// STARTUP — always load from Sheets on every page open/refresh
 render();
 if(scriptUrl){
   setSyncBadge('busy');
-  loadFromSheets();
+  loadFromSheets(); // no delay — load immediately on every refresh
 } else {
   setSyncBadge('none');
   renderEmpty();
