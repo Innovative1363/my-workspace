@@ -1466,6 +1466,23 @@ function scheduleSave(){
 
 function pushToSheet(){
   if(!scriptUrl||_isSaving)return;
+  // Deduplicate silently before every save
+  state.projects.forEach(p=>{
+    p.phases.forEach(ph=>{
+      const seen=new Set();
+      p.tasks[ph]=(p.tasks[ph]||[]).filter(t=>{
+        const key=t.text.trim().toLowerCase()+'|'+t.type;
+        if(seen.has(key))return false;
+        seen.add(key);return true;
+      });
+      const seenN=new Set();
+      p.notes[ph]=(p.notes[ph]||[]).filter(n=>{
+        const key=(n.text||'').trim().toLowerCase();
+        if(seenN.has(key))return false;
+        seenN.add(key);return true;
+      });
+    });
+  });
   _isSaving=true;
   setSyncBadge('busy');
   // Stamp the data with version + tabId so we can detect conflicts
@@ -1492,11 +1509,17 @@ function normalizeProjects(projects){
     if(!p.activePhase)p.activePhase=0;
     if(!p.phaseColors)p.phaseColors={};
     if(!p.status)p.status='active';
-    // ensure every phase has a color entry
     p.phases.forEach((ph,i)=>{
       if(!p.phaseColors[ph])p.phaseColors[ph]=PHASE_COLORS[i%PHASE_COLORS.length];
       if(!p.tasks[ph])p.tasks[ph]=[];
       if(!p.notes[ph])p.notes[ph]=[];
+      // AUTO-DEDUPLICATE tasks on every load
+      const seen=new Set();
+      p.tasks[ph]=p.tasks[ph].filter(t=>{
+        const key=t.text.trim().toLowerCase()+'|'+t.type;
+        if(seen.has(key))return false;
+        seen.add(key);return true;
+      });
       p.tasks[ph].forEach(t=>{
         if(!t.subtasks)t.subtasks=[];
         if(!t.note)t.note='';
@@ -1504,7 +1527,15 @@ function normalizeProjects(projects){
         if(t.highlighted===undefined)t.highlighted=false;
         if(!t.files)t.files=[];
       });
-      p.notes[ph]=p.notes[ph].map(n=>typeof n==='string'?{id:'n'+Math.random(),text:n,type:'note'}:n);
+      // AUTO-DEDUPLICATE notes on every load
+      const seenNotes=new Set();
+      p.notes[ph]=p.notes[ph]
+        .map(n=>typeof n==='string'?{id:'n'+Math.random(),text:n,type:'note'}:n)
+        .filter(n=>{
+          const key=n.text.trim().toLowerCase();
+          if(seenNotes.has(key))return false;
+          seenNotes.add(key);return true;
+        });
     });
     return p;
   });
