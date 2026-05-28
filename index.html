@@ -305,8 +305,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
   <div class="spacer"></div>
   <input class="sync-url" id="urlInput" placeholder="Paste Apps Script URL to sync..."/>
   <button class="btn dark" onclick="connectSheet()">Connect</button>
-  <button class="btn" onclick="loadFromSheets()">↺ Load</button>
-  <span class="badge none" id="syncBadge">not connected</span>
+  <button class="btn" onclick="loadFromSheets()" oncontextmenu="showSyncMenu(event)">↺ Load</button>
+  <span class="badge none" id="syncBadge" oncontextmenu="showSyncMenu(event)" style="cursor:context-menu" title="Right-click for sync options">not connected</span>
 </div>
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 <div class="layout">
@@ -1551,7 +1551,39 @@ function loadFromSheets(silent){
   document.head.appendChild(s);
 }
 
-// Listen for saves from OTHER tabs via localStorage
+// DEDUPLICATE — removes duplicate tasks based on text+phase match
+function deduplicateAll(){
+  let totalRemoved=0;
+  state.projects.forEach(p=>{
+    p.phases.forEach(ph=>{
+      const tasks=p.tasks[ph]||[];
+      const seen=new Set();
+      const deduped=tasks.filter(t=>{
+        const key=t.text.trim().toLowerCase()+'|'+t.type;
+        if(seen.has(key))return false;
+        seen.add(key);return true;
+      });
+      totalRemoved+=tasks.length-deduped.length;
+      p.tasks[ph]=deduped;
+    });
+  });
+  if(totalRemoved>0){
+    render();scheduleSave();
+    showToast(`Removed ${totalRemoved} duplicate task${totalRemoved>1?'s':''}`);
+  } else {
+    showToast('No duplicates found');
+  }
+}
+
+function showSyncMenu(e){
+  e.preventDefault();
+  showCtx(e.clientX,e.clientY,[
+    {label:'↺ Load from Sheets',fn:'function(){loadFromSheets(false)}'},
+    {label:'💾 Save to Sheets now',fn:'function(){pushToSheet()}'},
+    'sep',
+    {label:'🧹 Remove duplicate tasks',fn:'function(){deduplicateAll()}'},
+  ]);
+}
 window.addEventListener('storage',e=>{
   if(e.key==='ws_last_save'&&scriptUrl){
     try{
@@ -1572,17 +1604,22 @@ document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='hidden'&&scriptUrl&&state.projects.length){
     clearTimeout(saveTimer);
     if(_saveVersion>_sheetsVersion){
-      // Unsaved changes — push now
       navigator.sendBeacon
         ?navigator.sendBeacon(scriptUrl,JSON.stringify({action:'save',projects:state.projects,tabId:_tabId,savedAt:Date.now()}))
         :fetch(scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'save',projects:state.projects})}).catch(()=>{});
       try{localStorage.setItem('ws_last_save',JSON.stringify({tabId:_tabId,version:_saveVersion,t:Date.now()}));}catch(e){}
+      _sheetsVersion=_saveVersion;
     }
   }
   if(document.visibilityState==='visible'&&scriptUrl){
     const now=Date.now();
-    if(!window._lastVisible||(now-window._lastVisible)>20000){
+    const away=(now-(window._lastVisible||now));
+    // Only reload if: away > 45 seconds AND no pending unsaved changes
+    if(away>45000&&_saveVersion<=_sheetsVersion){
       loadFromSheets(false);
+    } else if(away>45000){
+      // We have unsaved changes — save first, don't reload (would lose changes)
+      pushToSheet();
     }
     window._lastVisible=now;
   }
