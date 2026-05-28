@@ -1621,40 +1621,47 @@ window.addEventListener('storage',e=>{
   if(e.key==='ws_last_save'&&scriptUrl){
     try{
       const info=JSON.parse(e.newValue);
-      // Another tab saved — reload silently so we're up to date before our next save
       if(info.tabId!==_tabId){
-        setSyncBadge('conflict');
-        // Wait a beat then reload — don't interrupt user mid-type
-        clearTimeout(saveTimer);
-        setTimeout(()=>loadFromSheets(true),1500);
+        // Another tab saved — only reload if user has been idle for 10+ seconds
+        const recentActivity=Date.now()-_lastActivity<10000;
+        if(!recentActivity){
+          setSyncBadge('conflict');
+          clearTimeout(saveTimer);
+          setTimeout(()=>loadFromSheets(true),2000);
+        }
+        // If user is active, their next scheduleSave will handle it
       }
     }catch(ex){}
   }
 });
 
-// Page visibility — save on hide, reload on show
+// Track last user activity
+let _lastActivity=Date.now();
+document.addEventListener('mousemove',()=>_lastActivity=Date.now(),{passive:true});
+document.addEventListener('keydown',()=>_lastActivity=Date.now(),{passive:true});
+document.addEventListener('touchstart',()=>_lastActivity=Date.now(),{passive:true});
+
+// Page visibility — save on hide, reload on show only if truly idle
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='hidden'&&scriptUrl&&state.projects.length){
     clearTimeout(saveTimer);
     if(_saveVersion>_sheetsVersion){
-      navigator.sendBeacon
-        ?navigator.sendBeacon(scriptUrl,JSON.stringify({action:'save',projects:state.projects,tabId:_tabId,savedAt:Date.now()}))
-        :fetch(scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'save',projects:state.projects})}).catch(()=>{});
+      const data=JSON.stringify({action:'save',projects:state.projects,tabId:_tabId,savedAt:Date.now()});
+      navigator.sendBeacon?navigator.sendBeacon(scriptUrl,data):fetch(scriptUrl,{method:'POST',mode:'no-cors',body:data}).catch(()=>{});
       try{localStorage.setItem('ws_last_save',JSON.stringify({tabId:_tabId,version:_saveVersion,t:Date.now()}));}catch(e){}
       _sheetsVersion=_saveVersion;
     }
+    window._hiddenAt=Date.now();
   }
   if(document.visibilityState==='visible'&&scriptUrl){
-    const now=Date.now();
-    const away=(now-(window._lastVisible||now));
-    // Only reload if: away > 45 seconds AND no pending unsaved changes
-    if(away>45000&&_saveVersion<=_sheetsVersion){
+    const hiddenFor=Date.now()-(window._hiddenAt||Date.now());
+    const recentActivity=Date.now()-_lastActivity<5000;
+    // Only reload if: hidden for 2+ minutes AND user wasn't just active
+    // This prevents reload while user is actively working and just switches tabs briefly
+    if(hiddenFor>120000&&!recentActivity&&_saveVersion<=_sheetsVersion){
       loadFromSheets(false);
-    } else if(away>45000){
-      // We have unsaved changes — save first, don't reload (would lose changes)
-      pushToSheet();
     }
-    window._lastVisible=now;
+    window._hiddenAt=null;
   }
 });
 window._lastVisible=Date.now();
