@@ -305,8 +305,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
   <div class="spacer"></div>
   <input class="sync-url" id="urlInput" placeholder="Paste Apps Script URL to sync..."/>
   <button class="btn dark" onclick="connectSheet()">Connect</button>
-  <button class="btn" onclick="loadFromSheets()" oncontextmenu="showSyncMenu(event)">↺ Load</button>
-  <span class="badge none" id="syncBadge" oncontextmenu="showSyncMenu(event)" style="cursor:context-menu" title="Right-click for sync options">not connected</span>
+  <button class="btn" onclick="loadFromSheets()">↺ Load</button>
+  <span class="badge none" id="syncBadge">not connected</span>
+  <button class="btn" onclick="showSyncMenu(event)" title="Sync tools" style="padding:5px 8px;font-size:13px">⚙</button>
 </div>
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 <div class="layout">
@@ -1576,8 +1577,9 @@ function deduplicateAll(){
 }
 
 function showSyncMenu(e){
-  e.preventDefault();
-  showCtx(e.clientX,e.clientY,[
+  e.preventDefault();e.stopPropagation();
+  const rect=e.target.getBoundingClientRect();
+  showCtx(rect.left,rect.bottom+4,[
     {label:'↺ Load from Sheets',fn:'function(){loadFromSheets(false)}'},
     {label:'💾 Save to Sheets now',fn:'function(){pushToSheet()}'},
     'sep',
