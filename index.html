@@ -705,6 +705,7 @@ function renderSidebar(){
   document.getElementById('projList').innerHTML=state.projects.map(pr=>{
     const st=getStatusInfo(getProjStatus(pr));
     const isActive=pr.id===state.activeProject;
+    // lightened version of project color for background
     return`<div class="proj-item ${isActive?'active':''}" id="pi_${pr.id}"
       onclick="selProj('${pr.id}')"
       oncontextmenu="showProjCtx(event,'${pr.id}')"
@@ -713,10 +714,10 @@ function renderSidebar(){
       ondragover="projDragOver(event,'${pr.id}')"
       ondragleave="projDragLeave(event,'${pr.id}')"
       ondrop="projDrop(event,'${pr.id}')"
-      ondragend="projDragEnd(event)">
-      <span style="color:var(--text3);cursor:grab;font-size:12px;flex-shrink:0;opacity:0.4" title="Drag to reorder">⠿</span>
-      <span class="proj-dot" style="background:${pr.color}"></span>
-      <span class="proj-name">${esc(pr.name)}</span>
+      ondragend="projDragEnd(event)"
+      style="${isActive?`background:${pr.color}22;border-left:3px solid ${pr.color};padding-left:7px`:'border-left:3px solid transparent'}">
+      <span style="width:10px;height:10px;border-radius:50%;background:${pr.color};flex-shrink:0;display:inline-block"></span>
+      <span class="proj-name" style="${isActive?`color:${pr.color};font-weight:600`:''}">${esc(pr.name)}</span>
       <span class="proj-status-badge" onclick="cycleStatus(event,'${pr.id}')" title="Click to change status: ${st.label}" style="font-size:9px;padding:1px 5px;border-radius:3px;background:${st.color}22;color:${st.color};border:1px solid ${st.color}44;cursor:pointer;flex-shrink:0;white-space:nowrap;font-weight:500">${st.label}</span>
     </div>`;
   }).join('');
@@ -904,9 +905,29 @@ function renderNotes(p){
   }).join(''):`<div class="empty">No ${activeTab} for this phase</div>`;
 }
 
+// POSITION MEMORY — save/restore last project+phase
+function savePosition(){
+  const p=getProj();if(!p)return;
+  try{localStorage.setItem('ws_position',JSON.stringify({pid:p.id,phase:p.activePhase}));}catch(e){}
+}
+function restorePosition(){
+  try{
+    const saved=JSON.parse(localStorage.getItem('ws_position')||'{}');
+    if(saved.pid){
+      const p=state.projects.find(pr=>pr.id===saved.pid);
+      if(p){state.activeProject=saved.pid;p.activePhase=saved.phase||0;}
+    }
+  }catch(e){}
+}
+
 // TASK ACTIONS
-function selProj(id){state.activeProject=id;expandedTasks={};editingTask=null;viewingHighlights=false;render()}
-function selPhase(i){const p=getProj();if(p){p.activePhase=i;expandedTasks={};editingTask=null;viewingHighlights=false;render()}}
+function selProj(id){
+  state.activeProject=id;expandedTasks={};editingTask=null;viewingHighlights=false;
+  savePosition();render();
+}
+function selPhase(i){
+  const p=getProj();if(p){p.activePhase=i;expandedTasks={};editingTask=null;viewingHighlights=false;savePosition();render();}
+}
 function updateTitle(v){const p=getProj();if(p){p.name=v;renderSidebar();scheduleSave()}}
 
 function addItem(){
@@ -1084,12 +1105,55 @@ function showCtx(x,y,items){
 function showPhaseCtx(e,i){
   e.preventDefault();e.stopPropagation();
   const p=getProj();const ph=p.phases[i];
+  const canLeft=i>0;const canRight=i<p.phases.length-1;
   showCtx(e.clientX,e.clientY,[
+    {label:'✎ Rename phase',fn:`function(){renamePhase(${i})}`},
     {label:'🎨 Change color',fn:`function(){showPhaseColorPicker(${e.clientX},${e.clientY},${i})}`},
+    'sep',
+    ...(canLeft?[{label:'← Move left',fn:`function(){movePhase(${i},-1)}`}]:[]),
+    ...(canRight?[{label:'→ Move right',fn:`function(){movePhase(${i},1)}`}]:[]),
+    'sep',
     {label:'📋 Copy phase to new project',fn:`function(){branchPhaseToProject('${ph}')}`},
     'sep',
     {label:'🗑 Delete phase',fn:`function(){deletePhase(${i})}`,danger:true}
   ]);
+}
+
+function renamePhase(i){
+  const p=getProj();const oldName=p.phases[i];
+  const existing=document.getElementById('renamePhaseModal');if(existing)existing.remove();
+  const div=document.createElement('div');div.id='renamePhaseModal';
+  div.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:400;display:flex;align-items:center;justify-content:center';
+  div.innerHTML=`<div style="background:var(--surface);border-radius:var(--radius);padding:22px 24px;width:320px;display:flex;flex-direction:column;gap:12px;box-shadow:0 12px 40px rgba(0,0,0,.2)">
+    <div style="font-size:14px;font-weight:500">Rename phase</div>
+    <input id="renamePhaseInp" style="font-size:13px;padding:8px 10px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg);color:var(--text);font-family:var(--font);outline:none;width:100%" value="${esc(oldName)}" onkeydown="if(event.key==='Enter')doRenamePhase(${i},this.value);if(event.key==='Escape')document.getElementById('renamePhaseModal').remove()"/>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" onclick="document.getElementById('renamePhaseModal').remove()">Cancel</button>
+      <button class="btn dark" onclick="doRenamePhase(${i},document.getElementById('renamePhaseInp').value)">Rename</button>
+    </div>
+  </div>`;
+  document.body.appendChild(div);
+  setTimeout(()=>{const el=document.getElementById('renamePhaseInp');if(el){el.focus();el.select();}},30);
+}
+function doRenamePhase(i,newName){
+  newName=newName.trim();if(!newName)return;
+  const p=getProj();const oldName=p.phases[i];
+  if(newName===oldName){document.getElementById('renamePhaseModal').remove();return;}
+  // rename in all data structures
+  p.phases[i]=newName;
+  p.tasks[newName]=p.tasks[oldName]||[];delete p.tasks[oldName];
+  p.notes[newName]=p.notes[oldName]||[];delete p.notes[oldName];
+  if(p.phaseColors){p.phaseColors[newName]=p.phaseColors[oldName]||'#888780';delete p.phaseColors[oldName];}
+  document.getElementById('renamePhaseModal').remove();
+  render();scheduleSave();
+}
+function movePhase(i,dir){
+  const p=getProj();const j=i+dir;
+  if(j<0||j>=p.phases.length)return;
+  [p.phases[i],p.phases[j]]=[p.phases[j],p.phases[i]];
+  if(p.activePhase===i)p.activePhase=j;
+  else if(p.activePhase===j)p.activePhase=i;
+  render();scheduleSave();
 }
 function showTaskCtx(e,id){
   e.preventDefault();e.stopPropagation();
@@ -1427,7 +1491,9 @@ function normalizeProjects(projects){
     if(!p.activePhase)p.activePhase=0;
     if(!p.phaseColors)p.phaseColors={};
     if(!p.status)p.status='active';
-    p.phases.forEach(ph=>{
+    // ensure every phase has a color entry
+    p.phases.forEach((ph,i)=>{
+      if(!p.phaseColors[ph])p.phaseColors[ph]=PHASE_COLORS[i%PHASE_COLORS.length];
       if(!p.tasks[ph])p.tasks[ph]=[];
       if(!p.notes[ph])p.notes[ph]=[];
       p.tasks[ph].forEach(t=>{
@@ -1461,8 +1527,9 @@ function loadFromSheets(silent){
       // Preserve active project/phase selection if possible
       const prevActive=state.activeProject;
       state.projects=loaded;
-      const stillExists=state.projects.find(p=>p.id===prevActive);
-      state.activeProject=stillExists?prevActive:state.projects[0].id;
+      restorePosition(); // restore last viewed project+phase
+      const stillExists=state.projects.find(p=>p.id===state.activeProject);
+      if(!stillExists)state.activeProject=state.projects[0].id;
       _sheetsVersion=_saveVersion; // in sync
       setSyncBadge('ok');
       render();
