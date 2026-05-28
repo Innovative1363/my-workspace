@@ -909,14 +909,18 @@ function renderNotes(p){
 // POSITION MEMORY — save/restore last project+phase
 function savePosition(){
   const p=getProj();if(!p)return;
-  try{localStorage.setItem('ws_position',JSON.stringify({pid:p.id,phase:p.activePhase}));}catch(e){}
+  try{localStorage.setItem('ws_position',JSON.stringify({pid:p.id,name:p.name,phase:p.activePhase}));}catch(e){}
 }
 function restorePosition(){
   try{
     const saved=JSON.parse(localStorage.getItem('ws_position')||'{}');
-    if(saved.pid){
-      const p=state.projects.find(pr=>pr.id===saved.pid);
-      if(p){state.activeProject=saved.pid;p.activePhase=saved.phase||0;}
+    if(!saved.pid&&!saved.name)return;
+    // Try matching by ID first, then by name as fallback
+    let p=state.projects.find(pr=>pr.id===saved.pid);
+    if(!p&&saved.name)p=state.projects.find(pr=>pr.name===saved.name);
+    if(p){
+      state.activeProject=p.id;
+      p.activePhase=Math.min(saved.phase||0,p.phases.length-1);
     }
   }catch(e){}
 }
@@ -1466,21 +1470,11 @@ function scheduleSave(){
 
 function pushToSheet(){
   if(!scriptUrl||_isSaving)return;
-  // Deduplicate silently before every save
+  // Deduplicate before every save using shared functions
   state.projects.forEach(p=>{
     p.phases.forEach(ph=>{
-      const seen=new Set();
-      p.tasks[ph]=(p.tasks[ph]||[]).filter(t=>{
-        const key=t.text.trim().toLowerCase()+'|'+t.type;
-        if(seen.has(key))return false;
-        seen.add(key);return true;
-      });
-      const seenN=new Set();
-      p.notes[ph]=(p.notes[ph]||[]).filter(n=>{
-        const key=(n.text||'').trim().toLowerCase();
-        if(seenN.has(key))return false;
-        seenN.add(key);return true;
-      });
+      p.tasks[ph]=dedupePhase(p.tasks[ph]||[]);
+      p.notes[ph]=dedupeNotes(p.notes[ph]||[]);
     });
   });
   _isSaving=true;
@@ -1504,6 +1498,24 @@ function pushToSheet(){
     .catch(()=>{setSyncBadge('err');_isSaving=false;});
 }
 
+function dedupePhase(tasks){
+  const seen=new Set();
+  return tasks.filter(t=>{
+    // normalize: lowercase, collapse whitespace, ignore punctuation differences
+    const key=t.text.trim().toLowerCase().replace(/\s+/g,' ');
+    if(seen.has(key))return false;
+    seen.add(key);return true;
+  });
+}
+function dedupeNotes(notes){
+  const seen=new Set();
+  return notes.filter(n=>{
+    const key=(n.text||'').trim().toLowerCase().replace(/\s+/g,' ');
+    if(seen.has(key))return false;
+    seen.add(key);return true;
+  });
+}
+
 function normalizeProjects(projects){
   return projects.map(p=>{
     if(!p.activePhase)p.activePhase=0;
@@ -1513,29 +1525,25 @@ function normalizeProjects(projects){
       if(!p.phaseColors[ph])p.phaseColors[ph]=PHASE_COLORS[i%PHASE_COLORS.length];
       if(!p.tasks[ph])p.tasks[ph]=[];
       if(!p.notes[ph])p.notes[ph]=[];
-      // AUTO-DEDUPLICATE tasks on every load
-      const seen=new Set();
-      p.tasks[ph]=p.tasks[ph].filter(t=>{
-        const key=t.text.trim().toLowerCase()+'|'+t.type;
-        if(seen.has(key))return false;
-        seen.add(key);return true;
-      });
+      // normalize notes format first
+      p.notes[ph]=p.notes[ph].map(n=>typeof n==='string'?{id:'n'+Math.random(),text:n,type:'note'}:n);
+      // deduplicate
+      p.tasks[ph]=dedupePhase(p.tasks[ph]);
+      p.notes[ph]=dedupeNotes(p.notes[ph]);
+      // normalize task fields
       p.tasks[ph].forEach(t=>{
         if(!t.subtasks)t.subtasks=[];
         if(!t.note)t.note='';
         if(!t.type)t.type='task';
         if(t.highlighted===undefined)t.highlighted=false;
         if(!t.files)t.files=[];
-      });
-      // AUTO-DEDUPLICATE notes on every load
-      const seenNotes=new Set();
-      p.notes[ph]=p.notes[ph]
-        .map(n=>typeof n==='string'?{id:'n'+Math.random(),text:n,type:'note'}:n)
-        .filter(n=>{
-          const key=n.text.trim().toLowerCase();
-          if(seenNotes.has(key))return false;
-          seenNotes.add(key);return true;
+        // dedupe subtasks too
+        const seenS=new Set();
+        t.subtasks=t.subtasks.filter(s=>{
+          const k=s.text.trim().toLowerCase().replace(/\s+/g,' ');
+          if(seenS.has(k))return false;seenS.add(k);return true;
         });
+      });
     });
     return p;
   });
@@ -1588,23 +1596,15 @@ function deduplicateAll(){
   let totalRemoved=0;
   state.projects.forEach(p=>{
     p.phases.forEach(ph=>{
-      const tasks=p.tasks[ph]||[];
-      const seen=new Set();
-      const deduped=tasks.filter(t=>{
-        const key=t.text.trim().toLowerCase()+'|'+t.type;
-        if(seen.has(key))return false;
-        seen.add(key);return true;
-      });
-      totalRemoved+=tasks.length-deduped.length;
-      p.tasks[ph]=deduped;
+      const before=(p.tasks[ph]||[]).length+(p.notes[ph]||[]).length;
+      p.tasks[ph]=dedupePhase(p.tasks[ph]||[]);
+      p.notes[ph]=dedupeNotes(p.notes[ph]||[]);
+      const after=p.tasks[ph].length+p.notes[ph].length;
+      totalRemoved+=before-after;
     });
   });
-  if(totalRemoved>0){
-    render();scheduleSave();
-    showToast(`Removed ${totalRemoved} duplicate task${totalRemoved>1?'s':''}`);
-  } else {
-    showToast('No duplicates found');
-  }
+  if(totalRemoved>0){render();scheduleSave();showToast(`Removed ${totalRemoved} duplicate${totalRemoved>1?'s':''}`);}
+  else showToast('No duplicates found');
 }
 
 function showSyncMenu(e){
