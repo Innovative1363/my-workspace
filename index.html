@@ -1521,23 +1521,28 @@ function normalizeProjects(projects){
     if(!p.activePhase)p.activePhase=0;
     if(!p.phaseColors)p.phaseColors={};
     if(!p.status)p.status='active';
+
+    // Restore phase order from saved sequence if provided
+    if(p.phaseOrder&&p.phaseOrder.length){
+      const ordered=[];
+      p.phaseOrder.forEach(ph=>{if(p.phases.includes(ph))ordered.push(ph);});
+      p.phases.forEach(ph=>{if(!ordered.includes(ph))ordered.push(ph);});
+      p.phases=ordered;
+    }
+
     p.phases.forEach((ph,i)=>{
       if(!p.phaseColors[ph])p.phaseColors[ph]=PHASE_COLORS[i%PHASE_COLORS.length];
       if(!p.tasks[ph])p.tasks[ph]=[];
       if(!p.notes[ph])p.notes[ph]=[];
-      // normalize notes format first
       p.notes[ph]=p.notes[ph].map(n=>typeof n==='string'?{id:'n'+Math.random(),text:n,type:'note'}:n);
-      // deduplicate
       p.tasks[ph]=dedupePhase(p.tasks[ph]);
       p.notes[ph]=dedupeNotes(p.notes[ph]);
-      // normalize task fields
       p.tasks[ph].forEach(t=>{
         if(!t.subtasks)t.subtasks=[];
         if(!t.note)t.note='';
         if(!t.type)t.type='task';
         if(t.highlighted===undefined)t.highlighted=false;
         if(!t.files)t.files=[];
-        // dedupe subtasks too
         const seenS=new Set();
         t.subtasks=t.subtasks.filter(s=>{
           const k=s.text.trim().toLowerCase().replace(/\s+/g,' ');
@@ -1563,16 +1568,22 @@ function loadFromSheets(silent){
   window[cb]=function(data){
     clearTimeout(timeout);hideLoading();
     if(data&&data.projects&&data.projects.length){
-      const loaded=normalizeProjects(data.projects);
-      // Preserve active project/phase selection if possible
-      const prevActive=state.activeProject;
+      const loaded=normalizeProjects(data.projects); // dedup happens inside here
+      restorePosition();
+      const stillExists=loaded.find(p=>p.id===state.activeProject)||loaded.find(p=>p.name===(state.projects.find(pr=>pr.id===state.activeProject)||{}).name);
       state.projects=loaded;
-      restorePosition(); // restore last viewed project+phase
-      const stillExists=state.projects.find(p=>p.id===state.activeProject);
-      if(!stillExists)state.activeProject=state.projects[0].id;
-      _sheetsVersion=_saveVersion; // in sync
+      if(stillExists)state.activeProject=stillExists.id;
+      else state.activeProject=state.projects[0].id;
+      restorePosition();
+      _sheetsVersion=_saveVersion;
       setSyncBadge('ok');
       render();
+      // After loading, immediately save the deduplicated version back to Sheets
+      // This cleans any duplicates that were stored in Sheets
+      setTimeout(()=>{
+        _saveVersion++;
+        pushToSheet();
+      },2000);
     } else {
       setSyncBadge('ok');
       if(!state.projects.length){renderEmpty();if(!silent)showToast('Connected — add your first project below');}
@@ -1614,7 +1625,7 @@ function showSyncMenu(e){
     {label:'↺ Load from Sheets',fn:'function(){loadFromSheets(false)}'},
     {label:'💾 Save to Sheets now',fn:'function(){pushToSheet()}'},
     'sep',
-    {label:'🧹 Remove duplicate tasks',fn:'function(){deduplicateAll()}'},
+    {label:'🧹 Clean duplicates + save to Sheets',fn:'function(){deduplicateAll();setTimeout(pushToSheet,500)}'},
   ]);
 }
 window.addEventListener('storage',e=>{
