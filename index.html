@@ -689,7 +689,9 @@ function cycleStatus(e,pid){
   const p=state.projects.find(pr=>pr.id===pid);if(!p)return;
   const idx=PROJ_STATUSES.findIndex(s=>s.key===(p.status||'active'));
   p.status=PROJ_STATUSES[(idx+1)%PROJ_STATUSES.length].key;
-  renderSidebar();scheduleSave();
+  renderSidebar();
+  // Save immediately
+  clearTimeout(saveTimer);_saveVersion++;pushToSheet();
 }
 
 // RENDER
@@ -952,7 +954,14 @@ function toggleExpand(id){
 function toggleTask(id){
   const p=getProj();const ph=viewingHighlights?findTaskPhase(id):getPhaseKey();
   const t=(p.tasks[ph]||[]).find(t=>t.id===id);
-  if(t){t.done=!t.done;if(viewingHighlights)renderTasksHighlights();else{renderTasks(p);renderPhases(p);}scheduleSave();}
+  if(t){
+    t.done=!t.done;
+    if(viewingHighlights)renderTasksHighlights();else{renderTasks(p);renderPhases(p);}
+    // Save immediately on checkbox — no delay
+    clearTimeout(saveTimer);
+    _saveVersion++;
+    pushToSheet();
+  }
 }
 function toggleHighlight(id){
   const p=getProj();const ph=viewingHighlights?findTaskPhase(id):getPhaseKey();
@@ -999,7 +1008,12 @@ function toggleSub(tid,sid){
   const p=getProj();const ph=viewingHighlights?findTaskPhase(tid):getPhaseKey();
   const t=(p.tasks[ph]||[]).find(t=>t.id===tid);
   const s=t&&(t.subtasks||[]).find(s=>s.id===sid);
-  if(s){s.done=!s.done;if(viewingHighlights)renderTasksHighlights();else renderTasks(p);scheduleSave();}
+  if(s){
+    s.done=!s.done;
+    if(viewingHighlights)renderTasksHighlights();else renderTasks(p);
+    // Save immediately
+    clearTimeout(saveTimer);_saveVersion++;pushToSheet();
+  }
 }
 function delSub(tid,sid){
   const p=getProj();const ph=viewingHighlights?findTaskPhase(tid):getPhaseKey();
@@ -1556,6 +1570,11 @@ function normalizeProjects(projects){
 
 function loadFromSheets(silent){
   if(!scriptUrl){setSyncBadge('none');renderEmpty();return;}
+  // Don't reload if a save is currently in progress — it would overwrite unsaved state
+  if(_isSaving){
+    setTimeout(()=>loadFromSheets(silent),1500);
+    return;
+  }
   if(!silent)setSyncBadge('busy');
   if(!state.projects.length&&!silent)showLoading('Loading your workspace...');
   const cb='load_'+Date.now()+'_'+Math.random().toString(36).slice(2);
