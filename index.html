@@ -809,10 +809,7 @@ function renderPhases(p){
   if(!p)return;
   const bar=document.getElementById('phaseBar');
   if(!bar)return;
-  // ensure Highlights phase exists if needed
-  if(hasHighlights&&!p.phases.includes('★ Highlights')){
-    // don't mutate — just show virtual chip
-  }
+  const hasHighlights=p.phases.some(ph=>(p.tasks[ph]||[]).some(t=>t.highlighted&&!t.done));
   bar.innerHTML=p.phases.map((ph,i)=>{
     const tasks=p.tasks[ph]||[];const allDone=tasks.filter(t=>t.type==='task').length>0&&tasks.filter(t=>t.type==='task').every(t=>t.done);
     const col=(p.phaseColors&&p.phaseColors[ph])||'#888780';
@@ -837,6 +834,7 @@ function renderPhaseChipsHighlight(){
 function renderTasksHighlights(){
   const p=getProj();
   if(!p)return;
+  const allHL=[];
   p.phases.forEach(ph=>{
     (p.tasks[ph]||[]).filter(t=>t.highlighted&&!t.done).forEach(t=>allHL.push({...t,_phase:ph}));
   });
@@ -1904,10 +1902,10 @@ function loadFromSheets(silent){
     clearTimeout(timeout);hideLoading();
     if(data&&data.projects&&data.projects.length){
       const loaded=normalizeProjects(data.projects);
-      state.projects=applyProjectOrder(loaded); // restore user's custom order
-      if(stillExists)state.activeProject=stillExists.id;
-      else state.activeProject=state.projects[0].id;
+      state.projects=applyProjectOrder(loaded);
       restorePosition();
+      const stillExists=state.projects.find(p=>p.id===state.activeProject);
+      if(!stillExists)state.activeProject=state.projects[0].id;
       _sheetsVersion=_saveVersion;
       setSyncBadge('ok');
       render();
