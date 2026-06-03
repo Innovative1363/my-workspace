@@ -484,8 +484,8 @@ let state={
   activeProject:null,addingProj:false,newProjName:'',newProjColor:COLORS[0]
 };
 
-function getProj(){return state.projects.find(p=>p.id===state.activeProject)}
-function getPhaseKey(){const p=getProj();return p?p.phases[p.activePhase]:''}
+function getProj(){return state.projects.find(p=>p.id===state.activeProject)||null}
+function getPhaseKey(){const p=getProj();return(p&&p.phases&&p.phases.length)?p.phases[p.activePhase]||p.phases[0]:''}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function uid(){return Math.random().toString(36).slice(2)}
 
@@ -763,9 +763,13 @@ function render(){
   const p=getProj();
   renderSidebar();
   if(!p){renderEmpty();return;}
-  document.getElementById('projTitleInput').value=p.name;
-  renderPhases(p);renderTasks(p);renderNotes(p);
-  if(scriptUrl)document.getElementById('urlInput').value=scriptUrl;
+  const pt=document.getElementById('projTitleInput');if(pt)pt.value=p.name;
+  renderPhases(p);
+  if(mainTab==='tasks')renderTasks(p);
+  else if(mainTab==='calendar')renderCalendar();
+  else if(mainTab==='archive')renderArchive();
+  renderNotes(p);
+  if(scriptUrl){const ui=document.getElementById('urlInput');if(ui)ui.value=scriptUrl;}
 }
 
 function renderSidebar(){
@@ -802,8 +806,9 @@ function renderSidebar(){
 }
 
 function renderPhases(p){
+  if(!p)return;
   const bar=document.getElementById('phaseBar');
-  const hasHighlights=p.phases.some(ph=>(p.tasks[ph]||[]).some(t=>t.highlighted&&!t.done));
+  if(!bar)return;
   // ensure Highlights phase exists if needed
   if(hasHighlights&&!p.phases.includes('★ Highlights')){
     // don't mutate — just show virtual chip
@@ -831,7 +836,7 @@ function renderPhaseChipsHighlight(){
 }
 function renderTasksHighlights(){
   const p=getProj();
-  const allHL=[];
+  if(!p)return;
   p.phases.forEach(ph=>{
     (p.tasks[ph]||[]).filter(t=>t.highlighted&&!t.done).forEach(t=>allHL.push({...t,_phase:ph}));
   });
@@ -843,6 +848,7 @@ function renderTasksHighlights(){
 }
 
 function renderTasks(p){
+  if(!p)return;
   viewingHighlights=false;
   const ph=getPhaseKey();
   const allItems=p.tasks[ph]||[];
@@ -967,6 +973,7 @@ function handleCardClick(e,id){
 }
 
 function renderNotes(p){
+  if(!p)return;
   const ph=getPhaseKey();
   const all=p.notes[ph]||[];
   const items=activeTab==='notes'?all.filter(n=>n.type==='note'||!n.type):all.filter(n=>n.type==='question');
