@@ -145,7 +145,23 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 .add-sub-inp:focus{border-color:var(--border-strong)}
 .task-note-area{width:100%;font-size:13px;padding:8px 10px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--surface);color:var(--text);font-family:var(--font);outline:none;resize:none;line-height:1.6;min-height:68px}
 .task-note-area:focus{border-color:var(--border-strong)}
-/* FILE DROP ZONE */
+/* TASK BADGES */
+.task-badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;cursor:pointer;flex-shrink:0;letter-spacing:.04em;text-transform:uppercase;border:1px solid transparent;transition:all .1s}
+.task-badge.badge-work{background:#fff0e0;color:#b85c00;border-color:#f5c48a}
+.task-badge.badge-look{background:#f0f4ff;color:#3a4bbf;border-color:#b0bfff}
+.task-badge.badge-ask{background:#f0fff4;color:#1a6b38;border-color:#8adbb0}
+.task-badge.badge-none{background:var(--surface2);color:var(--text3);border-color:var(--border-md);opacity:.5}
+/* INLINE SUBTASKS */
+.subtask-tally{display:flex;flex-direction:column;gap:2px;padding:4px 12px 6px 38px;border-top:1px solid var(--border)}
+.subtask-tally-row{display:flex;align-items:center;gap:7px;padding:3px 0;font-size:12.5px;color:var(--text2)}
+.subtask-tally-row.done-sub .st-text{text-decoration:line-through;color:var(--text3)}
+.st-cb{cursor:pointer;accent-color:var(--accent);flex-shrink:0;width:13px;height:13px}
+.st-text{flex:1;line-height:1.3}
+.st-del{background:none;border:none;cursor:pointer;color:var(--text3);font-size:12px;opacity:0;padding:0 2px;font-family:var(--font)}
+.subtask-tally-row:hover .st-del{opacity:1}
+.add-sub-inline{display:flex;gap:6px;padding:4px 12px 8px 38px}
+.add-sub-inline input{flex:1;font-size:12px;padding:5px 8px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--surface);color:var(--text);font-family:var(--font);outline:none}
+.add-sub-inline input:focus{border-color:var(--border-strong)}
 .file-drop-zone{border:1px dashed var(--border-md);border-radius:var(--radius-sm);padding:8px 12px;font-size:12px;color:var(--text3);text-align:center;transition:all .15s;cursor:pointer}
 .file-drop-zone.drag-active{border-color:var(--accent);background:var(--surface2);color:var(--text2)}
 .file-drop-zone input[type=file]{display:none}
@@ -296,6 +312,36 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 .mob-menu-btn{display:none}
 .mob-tab-bar{display:none}
 .sidebar-overlay{display:none}
+/* QUICK CAPTURE */
+.quick-capture-btn{position:fixed;bottom:24px;right:24px;width:48px;height:48px;border-radius:50%;background:var(--accent);color:#fff;border:none;font-size:24px;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.25);z-index:100;display:flex;align-items:center;justify-content:center;transition:transform .15s}
+.quick-capture-btn:hover{transform:scale(1.1)}
+/* DUE DATE */
+.due-badge{font-size:10px;font-weight:500;padding:2px 6px;border-radius:4px;flex-shrink:0;cursor:pointer;border:1px solid transparent;white-space:nowrap}
+.due-today{background:#fde8e8;color:#9b2020;border-color:#f5aaaa}
+.due-week{background:#fff8e0;color:#7a5c00;border-color:#f5d87a}
+.due-someday{background:var(--surface2);color:var(--text3);border-color:var(--border)}
+/* MAIN TABS */
+.main-tabs{display:flex;gap:0;padding:0 22px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+.main-tab{padding:8px 14px;font-size:12px;font-family:var(--font);color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:all .1s;white-space:nowrap}
+.main-tab:hover{color:var(--text2)}
+.main-tab.active{color:var(--text);border-bottom-color:var(--accent);font-weight:500}
+/* CALENDAR */
+.cal-view{flex:1;overflow-y:auto;padding:16px 22px;display:flex;flex-direction:column;gap:18px}
+.cal-section-head{font-size:10px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;color:var(--text3);margin-bottom:4px}
+.cal-task-row{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;cursor:pointer;transition:border-color .1s}
+.cal-task-row:hover{border-color:var(--border-md)}
+.cal-proj-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.cal-task-text{flex:1;color:var(--text)}
+.cal-task-proj{font-size:11px;color:var(--text3)}
+/* ARCHIVE */
+.archive-view{flex:1;overflow-y:auto;padding:16px 22px;display:flex;flex-direction:column;gap:4px}
+.archive-section-head{font-size:10px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;color:var(--text3);padding:8px 0 4px;border-top:1px solid var(--border);margin-top:8px}
+.archive-section-head:first-child{border-top:none;margin-top:0}
+.archive-row{display:flex;align-items:center;gap:10px;padding:6px 10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12.5px;color:var(--text3)}
+.archive-text{flex:1;text-decoration:line-through;font-size:12px}
+.archive-proj{font-size:10px;color:var(--text3);white-space:nowrap}
+.archive-restore{background:none;border:1px solid var(--border-md);cursor:pointer;color:var(--text3);font-size:11px;padding:2px 7px;border-radius:4px;font-family:var(--font)}
+.archive-restore:hover{background:var(--surface2);color:var(--text2)}
 </style>
 </head>
 <body>
@@ -323,6 +369,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
     <div class="proj-header">
       <input class="proj-title" id="projTitleInput" placeholder="Project name" oninput="updateTitle(this.value)"/>
       <button class="btn sm" onclick="sendToClaude()" title="Send phase to Claude for deck/summary">✦ Send to Claude ↗</button>
+    </div>
+    <div class="main-tabs">
+      <span class="main-tab active" id="mtTasks" onclick="switchMainTab('tasks')">☑ Tasks</span>
+      <span class="main-tab" id="mtCalendar" onclick="switchMainTab('calendar')">📅 Calendar</span>
+      <span class="main-tab" id="mtArchive" onclick="switchMainTab('archive')">🗄 Archive</span>
     </div>
     <div class="phase-bar" id="phaseBar"></div>
     <div class="content">
@@ -380,6 +431,17 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
   </div>
 </div>
 <div class="toast" id="toast"></div>
+<button class="quick-capture-btn" onclick="showQuickCapture()" title="Quick add task (any project)">＋</button>
+
+<!-- CALENDAR PANEL -->
+<div id="calendarPanel" style="display:none;flex:1;overflow:hidden;flex-direction:column">
+  <div class="cal-view" id="calView"></div>
+</div>
+
+<!-- ARCHIVE PANEL -->
+<div id="archivePanel" style="display:none;flex:1;overflow:hidden;flex-direction:column">
+  <div class="archive-view" id="archiveView"></div>
+</div>
 
 <!-- MOBILE BOTTOM TAB BAR -->
 <div class="mob-tab-bar">
@@ -403,6 +465,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 <script>
 const COLORS=['#7F77DD','#1D9E75','#D85A30','#378ADD','#D4537E','#BA7517','#639922','#888780'];
 const PHASE_COLORS=['#888780','#7F77DD','#1D9E75','#D85A30','#378ADD','#D4537E','#BA7517','#639922'];
+const DUE_CYCLE=['none','today','week','someday'];
+const DUE_LABELS={none:'Due',today:'Today',week:'This week',someday:'Someday'};
 let scriptUrl=localStorage.getItem('ws_script_url')||'';
 let driveScriptUrl=localStorage.getItem('ws_drive_url')||'';
 let saveTimer=null;
@@ -667,7 +731,7 @@ function projDrop(e,id){
   const di=state.projects.findIndex(p=>p.id===id);
   if(si<0||di<0)return;
   const[moved]=state.projects.splice(si,1);state.projects.splice(di,0,moved);
-  projDragSrc=null;renderSidebar();scheduleSave();
+  projDragSrc=null;renderSidebar();saveProjectOrder();scheduleSave();
 }
 function projDragEnd(e){
   // clean up all opacity/borders
@@ -710,7 +774,7 @@ function renderSidebar(){
     const isActive=pr.id===state.activeProject;
     // lightened version of project color for background
     return`<div class="proj-item ${isActive?'active':''}" id="pi_${pr.id}"
-      onclick="selProj('${pr.id}')"
+      onclick="selProjAndClose('${pr.id}')"
       oncontextmenu="showProjCtx(event,'${pr.id}')"
       draggable="true"
       ondragstart="projDragStart(event,'${pr.id}')"
@@ -796,11 +860,16 @@ function renderTasks(p){
 
 function renderTaskCard(t,inHL){
   const isExp=expandedTasks[t.id];
-  const subCount=(t.subtasks||[]).length;
-  const subDone=(t.subtasks||[]).filter(s=>s.done).length;
+  const subtasks=t.subtasks||[];
+  const subDone=subtasks.filter(s=>s.done).length;
   const isQ=t.type==='question';
   const isEditing=editingTask===t.id;
   const files=(t.files||[]);
+  const badge=t.badge||'none';
+  const badgeLabels={none:'',work:'Work',look:'Look into',ask:'Ask'};
+  const badgeClass={none:'badge-none',work:'badge-work',look:'badge-look',ask:'badge-ask'};
+  const showSubs=subtasks.length>0&&!t.subsCollapsed;
+
   return`<div class="task-card ${t.highlighted&&!t.done?'highlighted':''} ${isQ?'question-card':''}"
     id="tc_${t.id}"
     ondragover="dragOver(event,'${t.id}')" ondrop="dragDrop(event,'${t.id}')" ondragleave="dragLeave(event,'${t.id}')"
@@ -815,41 +884,45 @@ function renderTaskCard(t,inHL){
           ?`<input class="task-edit-inp" id="edit_${t.id}" value="${esc(t.text)}" onblur="saveTaskEdit('${t.id}',this.value)" onkeydown="if(event.key==='Enter')saveTaskEdit('${t.id}',this.value);if(event.key==='Escape'){editingTask=null;renderTasks(getProj())}" onclick="event.stopPropagation()"/>`
           :`<div class="task-text ${t.done?'done':''} ${isQ?'question-text':''}" style="user-select:text">${linkify(t.text)}</div>`
         }
-        ${!isEditing?(subCount>0||files.length>0)?`<div class="task-meta">
-          ${subCount>0?`<span>${subDone}/${subCount} subtasks</span>`:''}
-          ${files.filter(f=>!f.url.startsWith('data:')).map(f=>`<a class="file-chip" href="${esc(f.url)}" target="_blank" onclick="event.stopPropagation()" title="${esc(f.name)}">📎 ${esc(f.name)}</a>`).join('')}
-          ${files.filter(f=>f.url.startsWith('data:')).map(f=>`<span class="file-chip" title="${esc(f.name)}">🖼 ${esc(f.name)}</span>`).join('')}
-        </div>`:''  :''}
+        ${!isEditing&&(files.filter(f=>f.url&&!f.url.startsWith('data:')).length>0)?`<div class="task-meta">
+          ${files.filter(f=>f.url&&!f.url.startsWith('data:')).map(f=>`<a class="file-chip" href="${esc(f.url)}" target="_blank" onclick="event.stopPropagation()" title="${esc(f.name)}">📎 ${esc(f.name)}</a>`).join('')}
+        </div>`:''}
       </div>
       <div class="task-actions" onclick="event.stopPropagation()">
+        ${t.due&&t.due!=='none'?`<span class="due-badge due-${t.due}" onclick="cycleDue('${t.id}')" title="Due date">${DUE_LABELS[t.due]}</span>`:`<span class="due-badge" style="opacity:.3;font-size:9px" onclick="cycleDue('${t.id}')" title="Set due date">Due</span>`}
+        <span class="task-badge ${badgeClass[badge]}" onclick="cycleBadge('${t.id}')" title="Tag: ${badgeLabels[badge]||'None'}">${badgeLabels[badge]||'Tag'}</span>
         <button class="icon-btn ${t.highlighted?'star-active':''}" onclick="toggleHighlight('${t.id}')" title="Highlight">★</button>
         <button class="icon-btn" onclick="copyTask('${t.id}')" title="Copy text">⎘</button>
         <button class="icon-btn" onclick="startEditTask('${t.id}')" title="Edit">✎</button>
         ${isQ?`<button class="icon-btn" onclick="convertToTask('${t.id}')" title="Convert to task">☑</button>`:`<button class="icon-btn" onclick="convertToQuestion('${t.id}')" title="Convert to question">?</button>`}
-        <button class="icon-btn" onclick="toggleExpand('${t.id}')" title="${isExp?'Collapse':'Expand'}">${isExp?'▲':'▼'}</button>
+        <button class="icon-btn" onclick="toggleExpand('${t.id}')" title="${isExp?'Hide details':'Show details (notes/files)'}">≡</button>
         <button class="icon-btn" onclick="delTask('${t.id}')" title="Delete">×</button>
       </div>
     </div>
-    ${isExp?`<div class="task-detail" onclick="event.stopPropagation()">
-      <div>
-        <div class="detail-label">Subtasks</div>
-        <div class="subtask-list">
-          ${(t.subtasks||[]).map(s=>{
-            const isES=editingSubtask===s.id;
-            return`<div class="subtask-row">
-              <input type="checkbox" class="s-cb" ${s.done?'checked':''} onchange="toggleSub('${t.id}','${s.id}')"/>
-              ${isES?`<input class="s-edit-inp" id="sedit_${s.id}" value="${esc(s.text)}" onblur="saveSubEdit('${t.id}','${s.id}',this.value)" onkeydown="if(event.key==='Enter')saveSubEdit('${t.id}','${s.id}',this.value);if(event.key==='Escape'){editingSubtask=null;renderTasks(getProj())}"/>`
-              :`<span class="s-text ${s.done?'done':''}" ondblclick="startEditSub('${s.id}')" style="user-select:text">${linkify(s.text)}</span>`}
-              <button class="s-del" onclick="delSub('${t.id}','${s.id}')">×</button>
-            </div>`;
-          }).join('')}
-          ${!(t.subtasks||[]).length?`<div style="font-size:12px;color:var(--text3);padding:3px 6px">No subtasks yet</div>`:''}
-        </div>
-        <div class="add-sub-row" style="margin-top:6px">
-          <input class="add-sub-inp" id="sub_${t.id}" placeholder="Add subtask..." onkeydown="handleSubKey(event,'${t.id}')"/>
-          <button class="btn sm" onclick="addSub('${t.id}')">+ Sub</button>
-        </div>
+    ${subtasks.length>0?`
+    <div class="subtask-tally">
+      ${showSubs?subtasks.map(s=>{
+        const isES=editingSubtask===s.id;
+        return`<div class="subtask-row subtask-tally-row ${s.done?'done-sub':''}">
+          <input type="checkbox" class="st-cb" ${s.done?'checked':''} onchange="toggleSub('${t.id}','${s.id}')" onclick="event.stopPropagation()"/>
+          ${isES?`<input class="s-edit-inp st-text" id="sedit_${s.id}" value="${esc(s.text)}" onblur="saveSubEdit('${t.id}','${s.id}',this.value)" onkeydown="if(event.key==='Enter')saveSubEdit('${t.id}','${s.id}',this.value);if(event.key==='Escape'){editingSubtask=null;renderTasks(getProj())}" onclick="event.stopPropagation()"/>`
+          :`<span class="st-text ${s.done?'done':''}" ondblclick="startEditSub('${s.id}')" style="user-select:text">${linkify(s.text)}</span>`}
+          <button class="st-del" onclick="delSub('${t.id}','${s.id}');event.stopPropagation()">×</button>
+        </div>`;
+      }).join(''):''}
+      <div style="display:flex;align-items:center;gap:6px;padding-top:2px">
+        <span style="font-size:11px;color:var(--text3);cursor:pointer" onclick="toggleSubsCollapse('${t.id}');event.stopPropagation()">${showSubs?'▲ collapse':'▼ show '+subtasks.length+' ('+subDone+'/'+subtasks.length+' done)'}</span>
       </div>
+    </div>
+    <div class="add-sub-inline" onclick="event.stopPropagation()">
+      <input id="sub_${t.id}" placeholder="+ add subtask..." onkeydown="handleSubKey(event,'${t.id}')" onclick="event.stopPropagation()"/>
+      <button class="btn sm" onclick="addSub('${t.id}');event.stopPropagation()">Add</button>
+    </div>`:`
+    <div class="add-sub-inline" onclick="event.stopPropagation()" style="padding-top:2px">
+      <input id="sub_${t.id}" placeholder="+ add subtask..." onkeydown="handleSubKey(event,'${t.id}')" onclick="event.stopPropagation()"/>
+      <button class="btn sm" onclick="addSub('${t.id}');event.stopPropagation()">Add</button>
+    </div>`}
+    ${isExp?`<div class="task-detail" onclick="event.stopPropagation()">
       <div>
         <div class="detail-label">Note</div>
         <textarea class="task-note-area" id="tn_${t.id}" placeholder="Notes for this task..." onchange="saveTaskNote('${t.id}',this.value)">${esc(t.note||'')}</textarea>
@@ -865,7 +938,7 @@ function renderTaskCard(t,inHL){
           <input type="file" id="fi_${t.id}" multiple onchange="handleFileInput(event,'${t.id}')"/>
         </div>
         <div class="file-list">${files.map((f,fi)=>{
-          const isImg=f.url.startsWith('data:image')||/\.(png|jpg|jpeg|gif|webp|svg)$/i.test(f.name);
+          const isImg=f.url&&(f.url.startsWith('data:image')||/\.(png|jpg|jpeg|gif|webp|svg)$/i.test(f.name));
           const isLink=f.url&&!f.url.startsWith('data:')&&!f.url.startsWith('pending:');
           return isImg&&f.url.startsWith('data:')?`
             <div class="file-img-wrap">
@@ -886,10 +959,10 @@ function renderTaskCard(t,inHL){
 
 function handleCardClick(e,id){
   const tag=e.target.tagName.toLowerCase();
-  if(tag==='input'||tag==='button'||tag==='a'||tag==='textarea')return;
-  if(e.target.closest('a'))return;
+  if(tag==='input'||tag==='button'||tag==='a'||tag==='textarea'||tag==='span')return;
+  if(e.target.closest('a')||e.target.closest('.subtask-tally')||e.target.closest('.add-sub-inline'))return;
   if(e.target.classList.contains('icon-btn')||e.target.classList.contains('task-actions'))return;
-  if(e.target.classList.contains('drag-handle'))return;
+  if(e.target.classList.contains('drag-handle')||e.target.classList.contains('task-badge'))return;
   toggleExpand(id);
 }
 
@@ -908,7 +981,21 @@ function renderNotes(p){
   }).join(''):`<div class="empty">No ${activeTab} for this phase</div>`;
 }
 
-// POSITION MEMORY — save/restore last project+phase
+// PROJECT ORDER — persisted separately in localStorage so reloads don't scramble it
+function saveProjectOrder(){
+  try{localStorage.setItem('ws_proj_order',JSON.stringify(state.projects.map(p=>p.id)));}catch(e){}
+}
+function applyProjectOrder(projects){
+  try{
+    const order=JSON.parse(localStorage.getItem('ws_proj_order')||'[]');
+    if(!order.length)return projects;
+    const map=Object.fromEntries(projects.map(p=>[p.id,p]));
+    const ordered=[];
+    order.forEach(id=>{if(map[id]){ordered.push(map[id]);delete map[id];}});
+    Object.values(map).forEach(p=>ordered.push(p)); // new projects not in saved order go at end
+    return ordered;
+  }catch(e){return projects;}
+}
 function savePosition(){
   const p=getProj();if(!p)return;
   try{localStorage.setItem('ws_position',JSON.stringify({pid:p.id,name:p.name,phase:p.activePhase}));}catch(e){}
@@ -944,6 +1031,21 @@ function addItem(){
   const id='t'+Date.now();
   p.tasks[ph].push({id,text:v,type:addType,done:false,highlighted:false,subtasks:[],note:'',files:[]});
   inp.value='';renderTasks(p);scheduleSave();
+}
+function cycleBadge(id){
+  const p=getProj();const ph=viewingHighlights?findTaskPhase(id):getPhaseKey();
+  const t=(p.tasks[ph]||[]).find(t=>t.id===id);if(!t)return;
+  const badges=['none','work','look','ask'];
+  const idx=badges.indexOf(t.badge||'none');
+  t.badge=badges[(idx+1)%badges.length];
+  if(viewingHighlights)renderTasksHighlights();else renderTasks(p);
+  scheduleSave();
+}
+function toggleSubsCollapse(id){
+  const p=getProj();const ph=viewingHighlights?findTaskPhase(id):getPhaseKey();
+  const t=(p.tasks[ph]||[]).find(t=>t.id===id);if(!t)return;
+  t.subsCollapsed=!t.subsCollapsed;
+  if(viewingHighlights)renderTasksHighlights();else renderTasks(p);
 }
 function toggleExpand(id){
   expandedTasks[id]=!expandedTasks[id];
@@ -1050,25 +1152,70 @@ async function uploadFiles(files,tid){
 }
 async function uploadOneFile(file,tid){
   showToast('Uploading '+file.name+'...');
-  if(driveScriptUrl){
+  // Always try Drive upload via JSONP if script URL available
+  if(scriptUrl){
     try{
       const b64=await toBase64(file);
-      const res=await fetch(driveScriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'uploadFile',filename:file.name,mimeType:file.type,data:b64})});
-      // no-cors: can't read response — store as pending with filename
-      attachFile(tid,file.name,'pending:'+file.name);
-      showToast('Uploaded '+file.name+' — open Drive to get link');
-      return;
-    }catch(e){showToast('Upload failed — storing name only');}
+      const result=await uploadToGDriveJSONP(file.name,file.type,b64);
+      if(result&&result.url){
+        attachFile(tid,file.name,result.url);
+        showToast(file.name+' uploaded to Drive ✓');
+        return;
+      }
+    }catch(e){
+      console.log('Drive upload failed:',e);
+    }
   }
-  // fallback: store image as data URL for images, otherwise just name
+  // Fallback: store image as inline preview, other files as name only
   if(file.type.startsWith('image/')){
     const url=await toDataURL(file);
     attachFile(tid,file.name,url);
-    showToast(file.name+' attached as preview');
+    showToast(file.name+' saved as preview');
   } else {
     attachFile(tid,file.name,'');
-    showToast(file.name+' name saved — add Drive link manually');
+    showToast(file.name+' name saved — Drive upload failed, try reconnecting');
   }
+}
+
+function uploadToGDriveJSONP(filename,mimeType,b64data){
+  return new Promise((resolve,reject)=>{
+    const cb='upload_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+    const timeout=setTimeout(()=>{
+      delete window[cb];reject(new Error('Upload timeout'));
+    },30000);
+    window[cb]=function(data){
+      clearTimeout(timeout);delete window[cb];
+      if(data&&data.url)resolve(data);
+      else reject(new Error(data&&data.error||'No URL returned'));
+    };
+    // Send via POST with JSONP callback
+    const form=document.createElement('form');
+    form.method='POST';
+    form.action=scriptUrl;
+    form.target='upload_frame_'+cb;
+    form.style.display='none';
+    // Build payload with callback
+    const inp=document.createElement('input');
+    inp.type='hidden';inp.name='';
+    // Use GET with callback for small files, POST body for larger
+    // For reliability use a script tag with encoded data
+    const frame=document.createElement('iframe');
+    frame.name='upload_frame_'+cb;
+    frame.style.display='none';
+    document.body.appendChild(frame);
+    // POST the data and use fetch to get response
+    fetch(scriptUrl,{
+      method:'POST',
+      mode:'no-cors',
+      body:JSON.stringify({action:'uploadFile',filename,mimeType,data:b64data,callback:cb})
+    }).then(()=>{
+      // no-cors can't read response — fall back to JSONP GET for status
+      const s=document.createElement('script');
+      s.src=scriptUrl+'?action=getUploadStatus&callback='+cb+'&filename='+encodeURIComponent(filename)+'&t='+Date.now();
+      s.onerror=()=>{clearTimeout(timeout);delete window[cb];frame.remove();reject(new Error('Script error'));};
+      document.head.appendChild(s);
+    }).catch(err=>{clearTimeout(timeout);delete window[cb];frame.remove();reject(err);});
+  });
 }
 function toBase64(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(file);})}
 function toDataURL(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file);})}
@@ -1185,6 +1332,7 @@ function showTaskCtx(e,id){
     {label:t.type==='question'?'☑ Convert to task':'? Convert to question',fn:`function(){${t.type==='question'?`convertToTask('${id}')`:`convertToQuestion('${id}')`}}`},
     'sep',
     {label:'🌿 Branch into new project',fn:`function(){branchTaskToProject('${id}')}`},
+    {label:'🗄 Archive task',fn:`function(){archiveTask('${id}')}`},
     'sep',
     {label:'🗑 Delete',fn:`function(){delTask('${id}')}`,danger:true}
   ]);
@@ -1419,15 +1567,165 @@ function mobConnectSheet(){
 }
 
 // close sidebar when project selected on mobile
-const _selProj=selProj;
-selProj=function(id){
-  _selProj(id);
-  if(isMobile()){
-    const sb=document.getElementById('sidebar');
-    const ov=document.getElementById('sidebarOverlay');
-    sb.classList.remove('open');ov.classList.remove('show');
+function selProjAndClose(id){
+  selProj(id);
+  if(isMobile()){const sb=document.getElementById('sidebar');const ov=document.getElementById('sidebarOverlay');if(sb)sb.classList.remove('open');if(ov)ov.classList.remove('show');}
+}
+
+// MAIN TAB SWITCHING
+let mainTab='tasks';
+function switchMainTab(tab){
+  mainTab=tab;
+  ['tasks','calendar','archive'].forEach(t=>{
+    const el=document.getElementById('mt'+t.charAt(0).toUpperCase()+t.slice(1));
+    if(el)el.className='main-tab'+(t===tab?' active':'');
+  });
+  const tasksContent=document.querySelector('.content');
+  const calPanel=document.getElementById('calendarPanel');
+  const arcPanel=document.getElementById('archivePanel');
+  const phaseBar=document.getElementById('phaseBar');
+  if(tab==='tasks'){
+    if(tasksContent)tasksContent.style.display='flex';
+    if(calPanel)calPanel.style.display='none';
+    if(arcPanel)arcPanel.style.display='none';
+    if(phaseBar)phaseBar.style.display='';
+  } else if(tab==='calendar'){
+    if(tasksContent)tasksContent.style.display='none';
+    if(calPanel){calPanel.style.display='flex';renderCalendar();}
+    if(arcPanel)arcPanel.style.display='none';
+    if(phaseBar)phaseBar.style.display='none';
+  } else if(tab==='archive'){
+    if(tasksContent)tasksContent.style.display='none';
+    if(calPanel)calPanel.style.display='none';
+    if(arcPanel){arcPanel.style.display='flex';renderArchive();}
+    if(phaseBar)phaseBar.style.display='none';
   }
-};
+}
+
+// DUE DATES
+function cycleDue(id){
+  const p=getProj();const ph=viewingHighlights?findTaskPhase(id):getPhaseKey();
+  const t=(p.tasks[ph]||[]).find(t=>t.id===id);if(!t)return;
+  const idx=DUE_CYCLE.indexOf(t.due||'none');
+  t.due=DUE_CYCLE[(idx+1)%DUE_CYCLE.length];
+  if(viewingHighlights)renderTasksHighlights();else renderTasks(p);scheduleSave();
+}
+function cycleDueById(pid,ph,tid){
+  const p=state.projects.find(pr=>pr.id===pid);if(!p)return;
+  const t=(p.tasks[ph]||[]).find(t=>t.id===tid);if(!t)return;
+  const idx=DUE_CYCLE.indexOf(t.due||'none');
+  t.due=DUE_CYCLE[(idx+1)%DUE_CYCLE.length];
+  renderCalendar();scheduleSave();
+}
+
+// CALENDAR VIEW
+function renderCalendar(){
+  const sections={today:[],week:[],someday:[],none:[]};
+  state.projects.forEach(p=>{
+    p.phases.forEach(ph=>{
+      (p.tasks[ph]||[]).filter(t=>!t.done).forEach(t=>{sections[t.due||'none'].push({t,p,ph});});
+    });
+  });
+  const el=document.getElementById('calView');
+  const defs=[
+    {key:'today',label:'📅 Today',color:'#9b2020'},
+    {key:'week',label:'📆 This Week',color:'#7a5c00'},
+    {key:'someday',label:'🗓 Someday',color:'#888780'},
+    {key:'none',label:'Unscheduled',color:'#a8a59f'},
+  ];
+  el.innerHTML=defs.map(s=>`
+    <div>
+      <div class="cal-section-head" style="color:${s.color}">${s.label} <span style="font-weight:400;opacity:.7">${sections[s.key].length}</span></div>
+      ${sections[s.key].length?sections[s.key].map(({t,p,ph})=>`
+        <div class="cal-task-row" onclick="selProj('${p.id}');selPhase(${p.phases.indexOf(ph)});switchMainTab('tasks')">
+          <span class="cal-proj-dot" style="background:${p.color}"></span>
+          <span class="cal-task-text">${esc(t.text)}</span>
+          <span class="cal-task-proj">${esc(p.name)}</span>
+          <span class="due-badge due-${t.due||'none'}" onclick="event.stopPropagation();cycleDueById('${p.id}','${ph}','${t.id}')">${DUE_LABELS[t.due||'none']}</span>
+        </div>`).join(''):`<div style="font-size:12px;color:var(--text3);padding:8px 2px">None</div>`}
+    </div>`).join('');
+}
+
+// ARCHIVE
+function archiveTask(id){
+  const p=getProj();const ph=viewingHighlights?findTaskPhase(id):getPhaseKey();
+  const tasks=p.tasks[ph]||[];const idx=tasks.findIndex(t=>t.id===id);if(idx<0)return;
+  const[t]=tasks.splice(idx,1);
+  if(!p.archive)p.archive=[];
+  p.archive.push({...t,archivedAt:Date.now(),archivedFrom:ph});
+  delete expandedTasks[id];
+  if(viewingHighlights)renderTasksHighlights();else{renderTasks(p);renderPhases(p);}
+  scheduleSave();showToast('Task archived');
+}
+function restoreTask(pid,arcIdx){
+  const p=state.projects.find(pr=>pr.id===pid);if(!p||!p.archive)return;
+  const[t]=p.archive.splice(arcIdx,1);
+  const ph=t.archivedFrom||p.phases[0];
+  if(!p.tasks[ph])p.tasks[ph]=[];
+  delete t.archivedAt;delete t.archivedFrom;
+  p.tasks[ph].push(t);
+  renderArchive();scheduleSave();showToast('Task restored');
+}
+function renderArchive(){
+  const el=document.getElementById('archiveView');
+  const byProj={};
+  state.projects.forEach(p=>{
+    (p.archive||[]).forEach((t,i)=>{
+      if(!byProj[p.id])byProj[p.id]={p,items:[]};
+      byProj[p.id].items.push({t,arcIdx:i});
+    });
+  });
+  const entries=Object.values(byProj);
+  if(!entries.length){el.innerHTML='<div style="text-align:center;padding:40px 0;font-size:13px;color:var(--text3)">No archived tasks yet.<br><br>Right-click any task → Archive to move it here.</div>';return;}
+  el.innerHTML=entries.map(({p,items})=>`
+    <div class="archive-section-head"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color};margin-right:6px"></span>${esc(p.name)}</div>
+    ${items.map(({t,arcIdx})=>`
+      <div class="archive-row">
+        <span class="archive-text">${esc(t.text)}</span>
+        <span class="archive-proj">${esc(t.archivedFrom||'')}</span>
+        <button class="archive-restore" onclick="restoreTask('${p.id}',${arcIdx})">↩ Restore</button>
+      </div>`).join('')}`).join('');
+}
+
+// QUICK CAPTURE
+function showQuickCapture(){
+  const ex=document.getElementById('quickCaptureModal');if(ex)ex.remove();
+  const div=document.createElement('div');div.id='quickCaptureModal';
+  div.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:400;display:flex;align-items:center;justify-content:center';
+  div.innerHTML=`<div style="background:var(--surface);border-radius:var(--radius);padding:22px 24px;width:420px;display:flex;flex-direction:column;gap:12px;box-shadow:0 12px 40px rgba(0,0,0,.2)">
+    <div style="font-size:14px;font-weight:500">Quick capture</div>
+    <input id="qcText" style="font-size:14px;padding:10px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg);color:var(--text);font-family:var(--font);outline:none;width:100%" placeholder="Task..." onkeydown="if(event.key==='Enter')confirmQuickCapture();if(event.key==='Escape')document.getElementById('quickCaptureModal').remove()"/>
+    <div style="display:flex;gap:8px">
+      <select id="qcProject" style="flex:1;font-size:13px;padding:7px 10px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg);color:var(--text);font-family:var(--font);outline:none">
+        ${state.projects.map(p=>`<option value="${p.id}" ${p.id===state.activeProject?'selected':''}>${esc(p.name)}</option>`).join('')}
+      </select>
+      <select id="qcDue" style="font-size:13px;padding:7px 10px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg);color:var(--text);font-family:var(--font);outline:none">
+        <option value="none">No due date</option>
+        <option value="today">Today</option>
+        <option value="week">This week</option>
+        <option value="someday">Someday</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" onclick="document.getElementById('quickCaptureModal').remove()">Cancel</button>
+      <button class="btn dark" onclick="confirmQuickCapture()">Add task</button>
+    </div>
+  </div>`;
+  document.body.appendChild(div);
+  setTimeout(()=>document.getElementById('qcText').focus(),30);
+}
+function confirmQuickCapture(){
+  const text=document.getElementById('qcText').value.trim();if(!text)return;
+  const pid=document.getElementById('qcProject').value;
+  const due=document.getElementById('qcDue').value;
+  const p=state.projects.find(pr=>pr.id===pid);if(!p)return;
+  const ph=p.phases[p.activePhase]||p.phases[0];
+  if(!p.tasks[ph])p.tasks[ph]=[];
+  p.tasks[ph].push({id:'t'+Date.now(),text,type:'task',done:false,highlighted:false,subtasks:[],note:'',files:[],badge:'none',due,subsCollapsed:false});
+  document.getElementById('quickCaptureModal').remove();
+  if(state.activeProject===pid)renderTasks(p);
+  scheduleSave();showToast('Added to '+p.name);
+}
 
 // TOAST
 function showToast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2200)}
@@ -1542,6 +1840,7 @@ function normalizeProjects(projects){
     if(!p.activePhase)p.activePhase=0;
     if(!p.phaseColors)p.phaseColors={};
     if(!p.status)p.status='active';
+    if(!p.archive)p.archive=[];
 
     // Restore phase order from saved sequence if provided
     if(p.phaseOrder&&p.phaseOrder.length){
@@ -1564,6 +1863,9 @@ function normalizeProjects(projects){
         if(!t.type)t.type='task';
         if(t.highlighted===undefined)t.highlighted=false;
         if(!t.files)t.files=[];
+        if(!t.badge)t.badge='none';
+        if(t.subsCollapsed===undefined)t.subsCollapsed=false;
+        if(!t.due)t.due='none';
         const seenS=new Set();
         t.subtasks=t.subtasks.filter(s=>{
           const k=s.text.trim().toLowerCase().replace(/\s+/g,' ');
@@ -1594,10 +1896,8 @@ function loadFromSheets(silent){
   window[cb]=function(data){
     clearTimeout(timeout);hideLoading();
     if(data&&data.projects&&data.projects.length){
-      const loaded=normalizeProjects(data.projects); // dedup happens inside here
-      restorePosition();
-      const stillExists=loaded.find(p=>p.id===state.activeProject)||loaded.find(p=>p.name===(state.projects.find(pr=>pr.id===state.activeProject)||{}).name);
-      state.projects=loaded;
+      const loaded=normalizeProjects(data.projects);
+      state.projects=applyProjectOrder(loaded); // restore user's custom order
       if(stillExists)state.activeProject=stillExists.id;
       else state.activeProject=state.projects[0].id;
       restorePosition();
