@@ -1484,6 +1484,13 @@ function scheduleSave(){
 
 function pushToSheet(){
   if(!scriptUrl||_isSaving)return;
+  // SAFETY: never save if we have no projects loaded yet
+  // This prevents an incomplete load from wiping the Sheet
+  if(!state.projects||state.projects.length===0){
+    setSyncBadge('err');
+    showToast('Save blocked — no projects loaded. Click Load first.');
+    return;
+  }
   // Deduplicate before every save using shared functions
   state.projects.forEach(p=>{
     p.phases.forEach(ph=>{
@@ -1597,12 +1604,6 @@ function loadFromSheets(silent){
       _sheetsVersion=_saveVersion;
       setSyncBadge('ok');
       render();
-      // After loading, immediately save the deduplicated version back to Sheets
-      // This cleans any duplicates that were stored in Sheets
-      setTimeout(()=>{
-        _saveVersion++;
-        pushToSheet();
-      },2000);
     } else {
       setSyncBadge('ok');
       if(!state.projects.length){renderEmpty();if(!silent)showToast('Connected — add your first project below');}
