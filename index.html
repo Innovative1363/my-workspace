@@ -2076,6 +2076,7 @@ function normalizeProjects(projects){
         if(!t.badge)t.badge='none';
         if(t.subsCollapsed===undefined)t.subsCollapsed=false;
         if(!t.due)t.due='none';
+        if(!t.doneAt)t.doneAt=0;
         const seenS=new Set();
         t.subtasks=t.subtasks.filter(s=>{
           const k=s.text.trim().toLowerCase().replace(/\s+/g,' ');
@@ -2107,7 +2108,19 @@ function loadFromSheets(silent){
     clearTimeout(timeout);hideLoading();
     if(data&&data.projects&&data.projects.length){
       const loaded=normalizeProjects(data.projects);
-      state.projects=applyProjectOrder(loaded);
+      const ordered=applyProjectOrder(loaded);
+      // If user has unsaved local changes, protect them by merging
+      if(_saveVersion>_sheetsVersion&&state.projects.length>0){
+        ordered.forEach(sheetProj=>{
+          const local=state.projects.find(p=>p.id===sheetProj.id);
+          if(local){
+            sheetProj.tasks=local.tasks;
+            sheetProj.notes=local.notes;
+            sheetProj.archive=local.archive||sheetProj.archive||[];
+          }
+        });
+      }
+      state.projects=ordered;
       restorePosition();
       const stillExists=state.projects.find(p=>p.id===state.activeProject);
       if(!stillExists)state.activeProject=state.projects[0].id;
@@ -2196,10 +2209,10 @@ document.addEventListener('visibilitychange',()=>{
   }
   if(document.visibilityState==='visible'&&scriptUrl){
     const hiddenFor=Date.now()-(window._hiddenAt||Date.now());
-    const recentActivity=Date.now()-_lastActivity<5000;
-    // Only reload if: hidden for 2+ minutes AND user wasn't just active
-    // This prevents reload while user is actively working and just switches tabs briefly
-    if(hiddenFor>120000&&!recentActivity&&_saveVersion<=_sheetsVersion){
+    const recentActivity=Date.now()-_lastActivity<10000;
+    // Only reload if hidden 5+ minutes AND no unsaved changes AND no recent activity
+    // Increased from 2min to 5min to prevent data loss during normal workflow
+    if(hiddenFor>300000&&!recentActivity&&_saveVersion<=_sheetsVersion){
       loadFromSheets(false);
     }
     window._hiddenAt=null;
@@ -2207,11 +2220,13 @@ document.addEventListener('visibilitychange',()=>{
 });
 window._lastVisible=Date.now();
 
-// STARTUP — always load from Sheets on every page open/refresh
+// STARTUP — load from Sheets only on fresh page open
+// Do NOT reload if state already has projects (e.g. hot reload during development)
 render();
 if(scriptUrl){
   setSyncBadge('busy');
-  loadFromSheets(); // no delay — load immediately on every refresh
+  // Small delay so page renders first, then loads
+  setTimeout(()=>loadFromSheets(),300);
 } else {
   setSyncBadge('none');
   renderEmpty();
