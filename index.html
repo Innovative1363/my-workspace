@@ -325,14 +325,28 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 .main-tab{padding:8px 14px;font-size:12px;font-family:var(--font);color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:all .1s;white-space:nowrap}
 .main-tab:hover{color:var(--text2)}
 .main-tab.active{color:var(--text);border-bottom-color:var(--accent);font-weight:500}
-/* CALENDAR */
-.cal-view{flex:1;overflow-y:auto;padding:16px 22px;display:flex;flex-direction:column;gap:18px}
+/* CALENDAR CARDS */
+.cal-task-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:4px;overflow:hidden}
+.cal-task-card:hover{border-color:var(--border-md)}
+.cal-task-main{display:flex;align-items:center;gap:7px;padding:8px 10px}
+.cal-cb{cursor:pointer;accent-color:var(--accent);flex-shrink:0;width:14px;height:14px}
+.cal-sub-cb{cursor:pointer;accent-color:var(--accent);flex-shrink:0;width:12px;height:12px}
+.cal-task-text{flex:1;font-size:12.5px;color:var(--text);cursor:pointer;line-height:1.3}
+.cal-task-text:hover{text-decoration:underline;color:var(--q-text)}
+.cal-task-text.done{text-decoration:line-through;color:var(--text3)}
+.cal-proj-label{font-size:10px;color:var(--text3);white-space:nowrap;flex-shrink:0}
+.cal-subtasks{padding:2px 10px 6px 46px;display:flex;flex-direction:column;gap:2px;border-top:1px solid var(--border)}
+.cal-sub-row{display:flex;align-items:center;gap:6px;padding:2px 0}
+.cal-add-sub{padding:3px 0 2px}
+.cal-sub-inp{width:100%;font-size:11px;padding:3px 6px;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:var(--font);outline:none}
+.cal-sub-inp:focus{border-color:var(--border-md)}
+.cal-section{display:flex;flex-direction:column;gap:4px}
 .cal-section-head{font-size:10px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;color:var(--text3);margin-bottom:4px}
-.cal-task-row{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;cursor:pointer;transition:border-color .1s}
-.cal-task-row:hover{border-color:var(--border-md)}
-.cal-proj-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.cal-task-text{flex:1;color:var(--text)}
-.cal-task-proj{font-size:11px;color:var(--text3)}
+.cal-section-body{display:flex;flex-direction:column}
+/* SUBTASK INDENT FIX */
+.subtask-tally{display:flex;flex-direction:column;gap:2px;padding:4px 12px 6px 48px;border-top:1px solid var(--border)}
+.add-sub-inline{display:flex;gap:6px;padding:4px 12px 8px 48px}
+.add-sub-inline input{flex:1;font-size:12px;padding:5px 8px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--surface);color:var(--text);font-family:var(--font);outline:none}
 /* ARCHIVE */
 .archive-view{flex:1;overflow-y:auto;padding:16px 22px;display:flex;flex-direction:column;gap:4px}
 .archive-section-head{font-size:10px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;color:var(--text3);padding:8px 0 4px;border-top:1px solid var(--border);margin-top:8px}
@@ -1003,18 +1017,21 @@ function applyProjectOrder(projects){
 }
 function savePosition(){
   const p=getProj();if(!p)return;
-  try{localStorage.setItem('ws_position',JSON.stringify({pid:p.id,name:p.name,phase:p.activePhase}));}catch(e){}
+  const phaseKey=p.phases[p.activePhase]||'';
+  try{localStorage.setItem('ws_position',JSON.stringify({pid:p.id,name:p.name,phase:p.activePhase,phaseKey}));}catch(e){}
 }
 function restorePosition(){
   try{
     const saved=JSON.parse(localStorage.getItem('ws_position')||'{}');
     if(!saved.pid&&!saved.name)return;
-    // Try matching by ID first, then by name as fallback
     let p=state.projects.find(pr=>pr.id===saved.pid);
     if(!p&&saved.name)p=state.projects.find(pr=>pr.name===saved.name);
     if(p){
       state.activeProject=p.id;
-      p.activePhase=Math.min(saved.phase||0,p.phases.length-1);
+      // Try to match phase by name first (survives reorders), then by index
+      let phaseIdx=saved.phaseKey?p.phases.indexOf(saved.phaseKey):-1;
+      if(phaseIdx<0)phaseIdx=Math.min(saved.phase||0,p.phases.length-1);
+      p.activePhase=Math.max(0,phaseIdx);
     }
   }catch(e){}
 }
@@ -1623,32 +1640,153 @@ function cycleDueById(pid,ph,tid){
   renderCalendar();scheduleSave();
 }
 
-// CALENDAR VIEW
+// CALENDAR VIEW — weekly layout with inline task interaction
 function renderCalendar(){
-  const sections={today:[],week:[],someday:[],none:[]};
+  const el=document.getElementById('calView');
+  if(!el)return;
+
+  // Build day buckets: today, mon-sun of current week, someday, unscheduled
+  const now=new Date();
+  const todayStr=now.toDateString();
+  const dayOfWeek=now.getDay(); // 0=sun
+  const weekStart=new Date(now);weekStart.setDate(now.getDate()-(dayOfWeek===0?6:dayOfWeek-1)); // Mon
+  const weekDays=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const weekDates=weekDays.map((_,i)=>{const d=new Date(weekStart);d.setDate(weekStart.getDate()+i);return d;});
+
+  const buckets={today:[],week:[],someday:[],none:[]};
   state.projects.forEach(p=>{
     p.phases.forEach(ph=>{
-      (p.tasks[ph]||[]).filter(t=>!t.done).forEach(t=>{sections[t.due||'none'].push({t,p,ph});});
+      (p.tasks[ph]||[]).filter(t=>!t.done).forEach(t=>{
+        const due=t.due||'none';
+        buckets[due].push({t,p,ph});
+      });
     });
   });
-  const el=document.getElementById('calView');
-  const defs=[
-    {key:'today',label:'📅 Today',color:'#9b2020'},
-    {key:'week',label:'📆 This Week',color:'#7a5c00'},
-    {key:'someday',label:'🗓 Someday',color:'#888780'},
-    {key:'none',label:'Unscheduled',color:'#a8a59f'},
-  ];
-  el.innerHTML=defs.map(s=>`
-    <div>
-      <div class="cal-section-head" style="color:${s.color}">${s.label} <span style="font-weight:400;opacity:.7">${sections[s.key].length}</span></div>
-      ${sections[s.key].length?sections[s.key].map(({t,p,ph})=>`
-        <div class="cal-task-row" onclick="selProj('${p.id}');selPhase(${p.phases.indexOf(ph)});switchMainTab('tasks')">
-          <span class="cal-proj-dot" style="background:${p.color}"></span>
-          <span class="cal-task-text">${esc(t.text)}</span>
-          <span class="cal-task-proj">${esc(p.name)}</span>
-          <span class="due-badge due-${t.due||'none'}" onclick="event.stopPropagation();cycleDueById('${p.id}','${ph}','${t.id}')">${DUE_LABELS[t.due||'none']}</span>
-        </div>`).join(''):`<div style="font-size:12px;color:var(--text3);padding:8px 2px">None</div>`}
-    </div>`).join('');
+
+  const renderCalTask=(t,p,ph,ctx)=>{
+    const subs=t.subtasks||[];
+    const subsDone=subs.filter(s=>s.done).length;
+    return`<div class="cal-task-card" id="cal_tc_${t.id}_${ctx}">
+      <div class="cal-task-main">
+        <input type="checkbox" class="cal-cb" ${t.done?'checked':''} onchange="calToggleTask('${p.id}','${ph}','${t.id}')" onclick="event.stopPropagation()"/>
+        <span class="cal-proj-dot" style="background:${p.color}"></span>
+        <span class="cal-task-text ${t.done?'done':''}" onclick="navToTask('${p.id}','${ph}','${t.id}')" title="Click to go to task">${esc(t.text)}</span>
+        <span class="cal-proj-label">${esc(p.name)}</span>
+        <span class="due-badge due-${t.due||'none'}" onclick="cycleDueById('${p.id}','${ph}','${t.id}')" style="flex-shrink:0">${DUE_LABELS[t.due||'none']}</span>
+      </div>
+      ${subs.length?`<div class="cal-subtasks">
+        ${subs.map(s=>`<div class="cal-sub-row">
+          <input type="checkbox" class="cal-sub-cb" ${s.done?'checked':''} onchange="calToggleSub('${p.id}','${ph}','${t.id}','${s.id}')"/>
+          <span class="${s.done?'done':''}" style="font-size:11.5px;color:var(--text2);flex:1">${esc(s.text)}</span>
+        </div>`).join('')}
+        <div class="cal-add-sub">
+          <input class="cal-sub-inp" id="calsub_${t.id}_${ctx}" placeholder="+ subtask..." onkeydown="if(event.key==='Enter')calAddSub('${p.id}','${ph}','${t.id}','${ctx}')"/>
+        </div>
+      </div>`:`<div class="cal-add-sub" style="padding-left:46px">
+        <input class="cal-sub-inp" id="calsub_${t.id}_${ctx}" placeholder="+ subtask..." onkeydown="if(event.key==='Enter')calAddSub('${p.id}','${ph}','${t.id}','${ctx}')"/>
+      </div>`}
+    </div>`;
+  };
+
+  const renderSection=(label,color,items,ctx)=>`
+    <div class="cal-section">
+      <div class="cal-section-head" style="color:${color}">${label} <span style="font-weight:400;opacity:.6;font-size:10px">${items.length} task${items.length!==1?'s':''}</span></div>
+      <div class="cal-section-body">
+        ${items.length?items.map(({t,p,ph})=>renderCalTask(t,p,ph,ctx)).join('')
+          :`<div style="font-size:12px;color:var(--text3);padding:6px 2px;font-style:italic">Nothing here</div>`}
+      </div>
+    </div>`;
+
+  // Split week items by actual day (mon-sun)
+  const weekByDay=weekDates.map(d=>{
+    // "week" due tasks — show all on their appropriate column; for now show under week
+    return {date:d,label:weekDays[weekDates.indexOf(d)],items:[]};
+  });
+  // Add "today" tasks to today's column too
+  const todayIdx=weekDates.findIndex(d=>d.toDateString()===todayStr);
+
+  el.innerHTML=`
+  <div style="display:flex;flex-direction:column;gap:0;flex:1">
+    <!-- TODAY + THIS WEEK side by side -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font-size:11px;font-weight:600;color:#9b2020;letter-spacing:.06em;text-transform:uppercase;padding:8px 0 4px;border-bottom:2px solid #fca5a5">
+          📅 Today — ${now.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'})}
+        </div>
+        ${buckets.today.length?buckets.today.map(({t,p,ph})=>renderCalTask(t,p,ph,'today')).join('')
+          :`<div style="font-size:12px;color:var(--text3);padding:8px 2px;font-style:italic">No tasks due today</div>`}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font-size:11px;font-weight:600;color:#7a5c00;letter-spacing:.06em;text-transform:uppercase;padding:8px 0 4px;border-bottom:2px solid #fde68a">
+          📆 This Week
+        </div>
+        ${buckets.week.length?buckets.week.map(({t,p,ph})=>renderCalTask(t,p,ph,'week')).join('')
+          :`<div style="font-size:12px;color:var(--text3);padding:8px 2px;font-style:italic">No tasks this week</div>`}
+      </div>
+    </div>
+    <!-- SOMEDAY + UNSCHEDULED -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font-size:11px;font-weight:600;color:#6b6860;letter-spacing:.06em;text-transform:uppercase;padding:8px 0 4px;border-bottom:2px solid var(--border-md)">
+          🗓 Someday
+        </div>
+        ${buckets.someday.length?buckets.someday.map(({t,p,ph})=>renderCalTask(t,p,ph,'someday')).join('')
+          :`<div style="font-size:12px;color:var(--text3);padding:8px 2px;font-style:italic">Nothing planned</div>`}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font-size:11px;font-weight:600;color:#a8a59f;letter-spacing:.06em;text-transform:uppercase;padding:8px 0 4px;border-bottom:2px solid var(--border)">
+          Unscheduled
+        </div>
+        ${buckets.none.length?buckets.none.map(({t,p,ph})=>renderCalTask(t,p,ph,'unsched')).join('')
+          :`<div style="font-size:12px;color:var(--text3);padding:8px 2px;font-style:italic">All tasks scheduled ✓</div>`}
+      </div>
+    </div>
+  </div>`;
+}
+
+// Calendar task interactions
+function navToTask(pid,ph,tid){
+  const p=state.projects.find(pr=>pr.id===pid);if(!p)return;
+  const phIdx=p.phases.indexOf(ph);
+  selProj(pid);
+  if(phIdx>=0)selPhase(phIdx);
+  switchMainTab('tasks');
+  // Scroll to and expand the task
+  setTimeout(()=>{
+    expandedTasks[tid]=true;
+    renderTasks(getProj());
+    setTimeout(()=>{
+      const el=document.getElementById('tc_'+tid);
+      if(el)el.scrollIntoView({behavior:'smooth',block:'center'});
+    },50);
+  },100);
+}
+function calToggleTask(pid,ph,tid){
+  const p=state.projects.find(pr=>pr.id===pid);if(!p)return;
+  const t=(p.tasks[ph]||[]).find(t=>t.id===tid);if(!t)return;
+  t.done=!t.done;
+  clearTimeout(saveTimer);_saveVersion++;pushToSheet();
+  renderCalendar();
+  // also update task view if visible
+  if(mainTab==='tasks'&&state.activeProject===pid)renderTasks(p);
+}
+function calToggleSub(pid,ph,tid,sid){
+  const p=state.projects.find(pr=>pr.id===pid);if(!p)return;
+  const t=(p.tasks[ph]||[]).find(t=>t.id===tid);if(!t)return;
+  const s=(t.subtasks||[]).find(s=>s.id===sid);if(!s)return;
+  s.done=!s.done;
+  clearTimeout(saveTimer);_saveVersion++;pushToSheet();
+  renderCalendar();
+}
+function calAddSub(pid,ph,tid,ctx){
+  const inp=document.getElementById('calsub_'+tid+'_'+ctx);if(!inp)return;
+  const v=inp.value.trim();if(!v)return;
+  const p=state.projects.find(pr=>pr.id===pid);if(!p)return;
+  const t=(p.tasks[ph]||[]).find(t=>t.id===tid);if(!t)return;
+  if(!t.subtasks)t.subtasks=[];
+  t.subtasks.push({id:'s'+Date.now(),text:v,done:false});
+  inp.value='';
+  scheduleSave();renderCalendar();
 }
 
 // ARCHIVE
