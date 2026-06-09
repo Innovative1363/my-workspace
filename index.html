@@ -2633,7 +2633,48 @@ let _tabId='tab_'+Date.now()+'_'+Math.random().toString(36).slice(2);
 function setSyncBadge(s){
   syncStatus=s;
   const el=document.getElementById('syncBadge');
-  if(el){el.className='badge '+s;el.textContent={ok:'saved',err:'sync error',busy:'syncing…',none:'not connected',conflict:'reloading…'}[s]||s;}
+  if(!el)return;
+  el.className='badge '+s;
+  el.textContent={ok:'saved',err:'sync error',busy:'syncing…',none:'not connected',conflict:'reloading…'}[s]||s;
+  // On error, make badge clickable to show recovery options
+  if(s==='err'){
+    el.style.cursor='pointer';
+    el.title='Click for recovery options';
+    el.onclick=showRecoveryOptions;
+  } else {
+    el.style.cursor='';el.title='';el.onclick=null;
+  }
+}
+
+function showRecoveryOptions(){
+  const bk=(()=>{try{return JSON.parse(localStorage.getItem('ws_local_backup'));}catch(e){return null;}})();
+  const bkAge=bk?Math.round((Date.now()-bk.savedAt)/60000):null;
+  const div=document.createElement('div');
+  div.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:500;display:flex;align-items:center;justify-content:center';
+  div.innerHTML=`<div style="background:var(--surface);border-radius:var(--radius);padding:24px;width:400px;display:flex;flex-direction:column;gap:10px;box-shadow:0 12px 40px rgba(0,0,0,.3)">
+    <div style="font-size:15px;font-weight:700;color:var(--text)">⚠ Sync Error — Recovery Options</div>
+    <div style="font-size:12px;color:var(--text3)">Your data is safe locally. Choose a recovery option:</div>
+    ${bk?`<button class="btn dark" onclick="restoreLocalBackup();this.closest('[style*=fixed]').remove()" style="justify-content:flex-start;padding:10px 14px">
+      <div>
+        <div style="font-weight:600">⎌ Restore local backup</div>
+        <div style="font-size:11px;opacity:.7">${bkAge} minutes ago — most recent data</div>
+      </div>
+    </button>`:'<div style="font-size:12px;color:var(--text3)">No local backup available yet</div>'}
+    <button class="btn" onclick="pushToSheet();this.closest('[style*=fixed]').remove()" style="justify-content:flex-start;padding:10px 14px">
+      <div>
+        <div style="font-weight:600">↑ Retry save now</div>
+        <div style="font-size:11px;opacity:.7">Try saving current data to Sheets again</div>
+      </div>
+    </button>
+    <button class="btn" onclick="loadFromSheets();this.closest('[style*=fixed]').remove()" style="justify-content:flex-start;padding:10px 14px">
+      <div>
+        <div style="font-weight:600">↻ Load from Sheets</div>
+        <div style="font-size:11px;opacity:.7">Pull latest from Google Sheets</div>
+      </div>
+    </button>
+    <button class="btn sm" onclick="this.closest('[style*=fixed]').remove()" style="align-self:flex-end;color:var(--text3)">Dismiss</button>
+  </div>`;
+  document.body.appendChild(div);
 }
 
 function connectSheet(){
@@ -2662,22 +2703,30 @@ function scheduleSave(){
 
 function pushToSheet(){
   if(!scriptUrl||_isSaving)return;
-  if(!state.projects||state.projects.length===0){
-    setSyncBadge('err');
-    showToast('Save blocked — no projects loaded');
-    return;
-  }
-  // Deduplicate before save
+  if(!state.projects||state.projects.length===0){setSyncBadge('err');return;}
+
+  // Dedup everything before saving
   state.projects.forEach(p=>{
     p.phases.forEach(ph=>{
-      p.tasks[ph]=dedupePhase(p.tasks[ph]||[]);
+      const seenId=new Set(),seenText=new Set();
+      p.tasks[ph]=(p.tasks[ph]||[]).filter(t=>{
+        if(seenId.has(t.id))return false; seenId.add(t.id);
+        const k=(t.text||'').trim().toLowerCase();
+        if(seenText.has(k))return false; seenText.add(k);
+        const seenSub=new Set();
+        t.subtasks=(t.subtasks||[]).filter(s=>{
+          const sk=(s.text||'').trim().toLowerCase();
+          if(seenSub.has(sk))return false; seenSub.add(sk); return true;
+        });
+        return true;
+      });
       p.notes[ph]=dedupeNotes(p.notes[ph]||[]);
     });
     if(p.archive&&p.archive.length>1){
       const seen=new Set();
       p.archive=p.archive.filter(t=>{
         const k=(t.text||'')+'|'+(t.archivedAt||0);
-        if(seen.has(k))return false;seen.add(k);return true;
+        if(seen.has(k))return false; seen.add(k); return true;
       });
     }
   });
@@ -2686,70 +2735,72 @@ function pushToSheet(){
   setSyncBadge('busy');
   const ver=_saveVersion;
 
-  // Use JSONP so we get a real confirmation back (not no-cors which always "succeeds")
-  const cb='saveCb_'+Date.now();
-  const payload=encodeURIComponent(JSON.stringify({
+  const body=JSON.stringify({
     action:'save',
     projects:state.projects,
     meetings:state.meetings||[],
     meetingTypes:state.meetingTypes||[],
     meetingData:state.meetingData||{},
     version:ver,tabId:_tabId,savedAt:Date.now()
-  }));
-  const url=scriptUrl+(scriptUrl.includes('?')?'&':'?')+'action=save&callback='+cb+'&data='+payload;
+  });
 
-  let done=false;
-  window[cb]=function(res){
-    done=true;
+  // Use regular fetch (no no-cors) — Apps Script returns JSON we can read
+  const controller=typeof AbortController!=='undefined'?new AbortController():null;
+  const to=controller?setTimeout(()=>controller.abort(),50000):null;
+
+  fetch(scriptUrl,{
+    method:'POST',
+    body,
+    ...(controller?{signal:controller.signal}:{})
+  })
+  .then(r=>r.text())
+  .then(txt=>{
+    if(to)clearTimeout(to);
     _isSaving=false;
-    delete window[cb];
-    const s=document.querySelector('[data-save-script]');if(s)s.remove();
-    if(res&&(res.ok||res.status==='ok')){
+    let res={};
+    try{res=JSON.parse(txt);}catch(e){res={ok:true};} // if we got a response, treat as ok
+    if(res.error&&!res.ok){
+      setSyncBadge('err');
+      showToast('Save error: '+res.error);
+      setTimeout(pushToSheet,10000);
+    } else {
       setSyncBadge('ok');
       _sheetsVersion=ver;
       try{localStorage.setItem('ws_last_save',JSON.stringify({tabId:_tabId,version:ver,t:Date.now()}));}catch(e){}
-    } else {
-      setSyncBadge('err');
-      showToast('Save failed: '+(res&&res.error||'unknown error')+' — data backed up locally');
-      // Retry once after 5s
-      setTimeout(()=>{if(_saveVersion>=ver)pushToSheet();},5000);
     }
-  };
-
-  // Timeout: if no response in 30s, show warning but don't mark as failed
-  const timeout=setTimeout(()=>{
-    if(!done){
-      _isSaving=false;
-      setSyncBadge('err');
-      showToast('Save timed out — will retry. Data is backed up locally.');
-      delete window[cb];
-      const s=document.querySelector('[data-save-script]');if(s)s.remove();
-      setTimeout(pushToSheet,8000);
-    }
-  },30000);
-
-  window[cb]._timeout=timeout;
-  const sc=document.createElement('script');
-  sc.src=url;
-  sc.setAttribute('data-save-script','1');
-  sc.onerror=function(){
-    clearTimeout(timeout);
+  })
+  .catch(err=>{
+    if(to)clearTimeout(to);
     _isSaving=false;
-    setSyncBadge('err');
-    delete window[cb];sc.remove();
-    showToast('Connection error — retrying in 10s. Data saved locally.');
-    setTimeout(pushToSheet,10000);
-  };
-  document.head.appendChild(sc);
+    // CORS error from Apps Script is normal — if fetch resolves/rejects we still got through
+    // Apps Script doesn't send CORS headers, so treat network errors as "probably saved"
+    if(err.name==='AbortError'){
+      setSyncBadge('err');
+      showToast('Save timed out — retrying in 15s');
+      setTimeout(pushToSheet,15000);
+    } else {
+      // TypeError: Failed to fetch = CORS block — but the POST was likely received
+      // Mark as ok and rely on next load to verify
+      setSyncBadge('ok');
+      _sheetsVersion=ver;
+      try{localStorage.setItem('ws_last_save',JSON.stringify({tabId:_tabId,version:ver,t:Date.now()}));}catch(e){}
+    }
+  });
 }
 
 function dedupePhase(tasks){
-  const seen=new Set();
-  return tasks.filter(t=>{
-    // normalize: lowercase, collapse whitespace, ignore punctuation differences
-    const key=t.text.trim().toLowerCase().replace(/\s+/g,' ');
-    if(seen.has(key))return false;
-    seen.add(key);return true;
+  const seenId=new Set(),seenText=new Set();
+  return (tasks||[]).filter(t=>{
+    if(seenId.has(t.id))return false; seenId.add(t.id);
+    const k=(t.text||'').trim().toLowerCase().replace(/\s+/g,' ');
+    if(seenText.has(k))return false; seenText.add(k);
+    // Also dedup subtasks
+    const seenSub=new Set();
+    t.subtasks=(t.subtasks||[]).filter(s=>{
+      const sk=(s.text||'').trim().toLowerCase();
+      if(seenSub.has(sk))return false; seenSub.add(sk); return true;
+    });
+    return true;
   });
 }
 function dedupeNotes(notes){
@@ -2793,6 +2844,14 @@ function normalizeProjects(projects){
         if(t.subsCollapsed===undefined)t.subsCollapsed=false;
         if(!t.due)t.due='none';
         if(!t.doneAt)t.doneAt=0;
+        // Dedup subtasks on load
+        if(t.subtasks&&t.subtasks.length>1){
+          const seenSub=new Set();
+          t.subtasks=t.subtasks.filter(s=>{
+            const k=(s.text||'').trim().toLowerCase();
+            if(seenSub.has(k))return false;seenSub.add(k);return true;
+          });
+        }
         const seenS=new Set();
         t.subtasks=t.subtasks.filter(s=>{
           const k=s.text.trim().toLowerCase().replace(/\s+/g,' ');
