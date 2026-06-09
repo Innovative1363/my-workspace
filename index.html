@@ -2644,58 +2644,103 @@ function connectSheet(){
 
 function scheduleSave(){
   if(!scriptUrl)return;
-  // Only save on user-initiated actions — never on tab focus or load
   _saveVersion++;
   clearTimeout(saveTimer);
   setSyncBadge('busy');
-  saveTimer=setTimeout(pushToSheet,1500);
+  // Always save to localStorage immediately as backup
+  try{localStorage.setItem('ws_local_backup',JSON.stringify({
+    projects:state.projects,
+    meetings:state.meetings||[],
+    meetingTypes:state.meetingTypes||[],
+    meetingData:state.meetingData||{},
+    savedAt:Date.now(),
+    version:_saveVersion
+  }));}catch(e){}
+  // Debounce the actual Sheets save — wait until user pauses for 2.5s
+  saveTimer=setTimeout(pushToSheet,2500);
 }
 
 function pushToSheet(){
   if(!scriptUrl||_isSaving)return;
   if(!state.projects||state.projects.length===0){
     setSyncBadge('err');
-    showToast('Save blocked — no projects loaded. Click Load first.');
+    showToast('Save blocked — no projects loaded');
     return;
   }
-  // Deduplicate tasks/notes and archive before every save
+  // Deduplicate before save
   state.projects.forEach(p=>{
     p.phases.forEach(ph=>{
       p.tasks[ph]=dedupePhase(p.tasks[ph]||[]);
       p.notes[ph]=dedupeNotes(p.notes[ph]||[]);
     });
-    // Deduplicate archive by text+archivedAt
     if(p.archive&&p.archive.length>1){
       const seen=new Set();
       p.archive=p.archive.filter(t=>{
         const k=(t.text||'')+'|'+(t.archivedAt||0);
-        if(seen.has(k))return false;
-        seen.add(k);return true;
+        if(seen.has(k))return false;seen.add(k);return true;
       });
     }
   });
+
   _isSaving=true;
   setSyncBadge('busy');
-  // Stamp the data with version + tabId so we can detect conflicts
-  const payload=JSON.stringify({
+  const ver=_saveVersion;
+
+  // Use JSONP so we get a real confirmation back (not no-cors which always "succeeds")
+  const cb='saveCb_'+Date.now();
+  const payload=encodeURIComponent(JSON.stringify({
     action:'save',
     projects:state.projects,
     meetings:state.meetings||[],
     meetingTypes:state.meetingTypes||[],
     meetingData:state.meetingData||{},
-    version:_saveVersion,
-    tabId:_tabId,
-    savedAt:Date.now()
-  });
-  fetch(scriptUrl,{method:'POST',mode:'no-cors',body:payload})
-    .then(()=>{
+    version:ver,tabId:_tabId,savedAt:Date.now()
+  }));
+  const url=scriptUrl+(scriptUrl.includes('?')?'&':'?')+'action=save&callback='+cb+'&data='+payload;
+
+  let done=false;
+  window[cb]=function(res){
+    done=true;
+    _isSaving=false;
+    delete window[cb];
+    const s=document.querySelector('[data-save-script]');if(s)s.remove();
+    if(res&&(res.ok||res.status==='ok')){
       setSyncBadge('ok');
-      _sheetsVersion=_saveVersion;
+      _sheetsVersion=ver;
+      try{localStorage.setItem('ws_last_save',JSON.stringify({tabId:_tabId,version:ver,t:Date.now()}));}catch(e){}
+    } else {
+      setSyncBadge('err');
+      showToast('Save failed: '+(res&&res.error||'unknown error')+' — data backed up locally');
+      // Retry once after 5s
+      setTimeout(()=>{if(_saveVersion>=ver)pushToSheet();},5000);
+    }
+  };
+
+  // Timeout: if no response in 30s, show warning but don't mark as failed
+  const timeout=setTimeout(()=>{
+    if(!done){
       _isSaving=false;
-      // Broadcast to other tabs that data changed
-      try{localStorage.setItem('ws_last_save',JSON.stringify({tabId:_tabId,version:_saveVersion,t:Date.now()}));}catch(e){}
-    })
-    .catch(()=>{setSyncBadge('err');_isSaving=false;});
+      setSyncBadge('err');
+      showToast('Save timed out — will retry. Data is backed up locally.');
+      delete window[cb];
+      const s=document.querySelector('[data-save-script]');if(s)s.remove();
+      setTimeout(pushToSheet,8000);
+    }
+  },30000);
+
+  window[cb]._timeout=timeout;
+  const sc=document.createElement('script');
+  sc.src=url;
+  sc.setAttribute('data-save-script','1');
+  sc.onerror=function(){
+    clearTimeout(timeout);
+    _isSaving=false;
+    setSyncBadge('err');
+    delete window[cb];sc.remove();
+    showToast('Connection error — retrying in 10s. Data saved locally.');
+    setTimeout(pushToSheet,10000);
+  };
+  document.head.appendChild(sc);
 }
 
 function dedupePhase(tasks){
@@ -2839,13 +2884,30 @@ function deduplicateAll(){
 
 function showSyncMenu(e){
   e.preventDefault();e.stopPropagation();
-  const rect=e.target.getBoundingClientRect();
-  showCtx(rect.left,rect.bottom+4,[
+  const bk=(()=>{try{return JSON.parse(localStorage.getItem('ws_local_backup'));}catch(e){return null;}})();
+  const bkAge=bk?Math.round((Date.now()-bk.savedAt)/60000):null;
+  const items=[
     {label:'↺ Load from Sheets',fn:'function(){loadFromSheets(false)}'},
     {label:'💾 Save to Sheets now',fn:'function(){pushToSheet()}'},
     'sep',
-    {label:'🧹 Clean duplicates + save to Sheets',fn:'function(){deduplicateAll();setTimeout(pushToSheet,500)}'},
-  ]);
+    {label:'🧹 Clean duplicates + save',fn:'function(){deduplicateAll();setTimeout(pushToSheet,500)}'},
+  ];
+  if(bk)items.push({label:'⎌ Restore local backup ('+bkAge+'m ago)',fn:'function(){restoreLocalBackup()}'});
+  const rect=e.target.getBoundingClientRect();
+  showCtx(rect.left,rect.bottom+4,items);
+}
+function restoreLocalBackup(){
+  try{
+    const bk=JSON.parse(localStorage.getItem('ws_local_backup'));
+    if(!bk||!bk.projects){showToast('No local backup found');return;}
+    state.projects=normalizeProjects(bk.projects);
+    if(bk.meetingTypes)state.meetingTypes=bk.meetingTypes;
+    if(bk.meetingData)state.meetingData=bk.meetingData;
+    restorePosition();render();
+    const age=Math.round((Date.now()-bk.savedAt)/60000);
+    showToast('✓ Restored from local backup ('+age+'m ago) — save to Sheets to sync');
+    setTimeout(pushToSheet,1000);
+  }catch(e){showToast('Could not restore: '+e.message);}
 }
 window.addEventListener('storage',e=>{
   if(e.key==='ws_last_save'&&scriptUrl){
