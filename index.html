@@ -2653,19 +2653,26 @@ function scheduleSave(){
 
 function pushToSheet(){
   if(!scriptUrl||_isSaving)return;
-  // SAFETY: never save if we have no projects loaded yet
-  // This prevents an incomplete load from wiping the Sheet
   if(!state.projects||state.projects.length===0){
     setSyncBadge('err');
     showToast('Save blocked — no projects loaded. Click Load first.');
     return;
   }
-  // Deduplicate before every save using shared functions
+  // Deduplicate tasks/notes and archive before every save
   state.projects.forEach(p=>{
     p.phases.forEach(ph=>{
       p.tasks[ph]=dedupePhase(p.tasks[ph]||[]);
       p.notes[ph]=dedupeNotes(p.notes[ph]||[]);
     });
+    // Deduplicate archive by text+archivedAt
+    if(p.archive&&p.archive.length>1){
+      const seen=new Set();
+      p.archive=p.archive.filter(t=>{
+        const k=(t.text||'')+'|'+(t.archivedAt||0);
+        if(seen.has(k))return false;
+        seen.add(k);return true;
+      });
+    }
   });
   _isSaving=true;
   setSyncBadge('busy');
