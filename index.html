@@ -2130,36 +2130,40 @@ function sendRoomEmail(mid){
   const mt=state.meetingTypes.find(x=>x.id===mid);
   const subject=(mt?mt.label:'Meeting')+' Recap — '+new Date().toLocaleDateString();
   const body=buildRoomRecap(mid);
+
+  // Use JSONP GET instead of POST no-cors — same method as the working daily reminder script
+  const cb='emailCb_'+Date.now();
+  const payload=encodeURIComponent(JSON.stringify({to:toEmails.join(','),subject,body}));
+  const url=scriptUrl+(scriptUrl.includes('?')?'&':'?')+'action=sendEmail&data='+payload+'&callback='+cb;
+
   setSyncBadge('busy');
-  fetch(scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'sendEmail',to:toEmails.join(','),subject,body})})
-    .then(()=>{
-      setSyncBadge('ok');
-      // Show confirmation modal
+  window[cb]=function(res){
+    delete window[cb];
+    if(document.querySelector('[data-jsonp="'+cb+'"]'))document.querySelector('[data-jsonp="'+cb+'"]').remove();
+    setSyncBadge('ok');
+    if(res&&res.ok||res&&res.status==='ok'){
       const div=document.createElement('div');
-      div.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:500;display:flex;align-items:center;justify-content:center';
-      div.innerHTML=`<div style="background:var(--surface);border-radius:var(--radius);padding:28px 32px;width:380px;display:flex;flex-direction:column;gap:14px;box-shadow:0 12px 40px rgba(0,0,0,.25);text-align:center">
+      div.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:flex;align-items:center;justify-content:center';
+      div.innerHTML=`<div style="background:var(--surface);border-radius:var(--radius);padding:28px 32px;width:380px;display:flex;flex-direction:column;gap:14px;box-shadow:0 12px 40px rgba(0,0,0,.3);text-align:center">
         <div style="font-size:40px">✉️</div>
         <div style="font-size:16px;font-weight:700;color:var(--text)">Email Sent!</div>
         <div style="font-size:13px;color:var(--text2);line-height:1.6">Recap sent to:<br><strong>${toEmails.join('<br>')}</strong></div>
         <button class="btn dark" onclick="this.closest('[style*=fixed]').remove()" style="justify-content:center;padding:10px;font-size:14px">Done</button>
       </div>`;
       document.body.appendChild(div);
-    })
-    .catch(err=>{
-      setSyncBadge('err');
-      // Fallback: show error with mailto option
-      const div=document.createElement('div');
-      div.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:500;display:flex;align-items:center;justify-content:center';
-      div.innerHTML=`<div style="background:var(--surface);border-radius:var(--radius);padding:24px;width:380px;display:flex;flex-direction:column;gap:12px;box-shadow:0 12px 40px rgba(0,0,0,.25)">
-        <div style="font-size:15px;font-weight:700;color:#dc2626">Send Failed</div>
-        <div style="font-size:13px;color:var(--text2)">The Gmail send failed. Try opening in your email client instead.</div>
-        <div style="display:flex;gap:8px">
-          <button class="btn dark" onclick="window.open('mailto:${encodeURIComponent(toEmails.join(','))}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}','_blank');this.closest('[style*=fixed]').remove()">Open Email Client</button>
-          <button class="btn" onclick="this.closest('[style*=fixed]').remove()">Cancel</button>
-        </div>
-      </div>`;
-      document.body.appendChild(div);
-    });
+    } else {
+      showToast('Email error: '+(res&&res.message||res&&res.error||'unknown'));
+    }
+  };
+
+  const s=document.createElement('script');
+  s.src=url;
+  s.setAttribute('data-jsonp',cb);
+  s.onerror=function(){
+    delete window[cb];s.remove();setSyncBadge('err');
+    showToast('Script load failed — check Apps Script URL');
+  };
+  document.head.appendChild(s);
 }
 
 // Keep old meeting functions as stubs for backward compat with any saved data
