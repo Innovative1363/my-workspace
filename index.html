@@ -29,7 +29,18 @@ body.dark .import-area{background:var(--surface)}
 body.dark .import-ta{background:var(--surface2)}
 body.dark .add-inp{background:var(--surface);color:var(--text)}
 body.dark .cal-task-card{background:var(--surface);border-color:var(--border-md)}
-body.dark .cal-sub-inp{background:var(--surface2)}
+body.dark .cal-sub-inp{background:var(--surface2);color:var(--text);border-color:var(--border-md)}
+/* Dark mode calendar squares — today needs lighter accent so text is readable */
+body.dark #weekGrid>div[style*="background:var(--accent)"]{background:#3a3a35 !important}
+/* Cal task cards in dark mode */
+body.dark .cal-task-card{background:var(--surface);border-color:var(--border-md)}
+body.dark .cal-task-card:hover{border-color:var(--border-strong)}
+body.dark .cal-task-text{color:var(--text)}
+body.dark .cal-proj-label{color:var(--text3)}
+body.dark .cal-subtasks{border-top-color:var(--border)}
+/* Today section header in dark mode */
+body.dark #calTodaySection [style*="color:#dc2626"]{color:#f87171 !important}
+body.dark #calTodaySection [style*="border-bottom:3px solid #fca5a5"]{border-bottom-color:#7f1d1d !important}
 body.dark .act-add{background:var(--surface2);border-top-color:var(--border-md)}
 body.dark .act-add-ta{background:var(--surface3);color:var(--text);border-color:var(--border-md)}
 body.dark .act-add-date{background:var(--surface3);color:var(--text);border-color:var(--border-md)}
@@ -2232,7 +2243,10 @@ function renderWeekStrip(){
         <span style="font-size:9px;color:${isToday?'rgba(255,255,255,.85)':'var(--text2)'};line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${esc(t.text.slice(0,14))}</span>
       </div>`).join('');
       const more=tasks.length>3?`<div style="font-size:9px;opacity:.6;color:${isToday?'#fff':'var(--text3)'}">+${tasks.length-3}</div>`:'';
-      cells.push(`<div style="display:flex;flex-direction:column;border-radius:6px;padding:6px 5px 4px;background:${isToday?'var(--accent)':'var(--surface)'};border:1.5px solid ${isToday?'transparent':tasks.length?'var(--border-md)':'var(--border)'};min-height:68px;cursor:default;overflow:hidden">
+      const isDarkMode=document.body.classList.contains('dark');
+      const todayBg=isToday?(isDarkMode?'#4f4f47':'#1c1b18'):'var(--surface)';
+      const todayTextColor=isToday?'#fff':(isDarkMode?'var(--text)':'var(--text)');
+      cells.push(`<div style="display:flex;flex-direction:column;border-radius:6px;padding:6px 5px 4px;background:${todayBg};border:1.5px solid ${isToday?'transparent':tasks.length?'var(--border-md)':'var(--border)'};min-height:68px;cursor:default;overflow:hidden">
         <div style="display:flex;align-items:baseline;gap:3px;margin-bottom:3px">
           <span style="font-size:9px;font-weight:600;color:${isToday?'rgba(255,255,255,.6)':'var(--text3)'};text-transform:uppercase">${days[d]}</span>
           <span style="font-size:14px;font-weight:800;color:${isToday?'#fff':'var(--text)'};line-height:1">${date.getDate()}</span>
@@ -2460,6 +2474,24 @@ function calDeleteTask(pid,ph,tid){
   p.tasks[ph]=(p.tasks[ph]||[]).filter(x=>x.id!==tid);
   scheduleSave();renderCalendar();renderWeekStrip();
   showToast('Task deleted');
+}
+function calToggleSub(pid,ph,tid,sid){
+  const p=state.projects.find(pr=>pr.id===pid);if(!p)return;
+  const t=(p.tasks[ph]||[]).find(t=>t.id===tid);if(!t)return;
+  const s=(t.subtasks||[]).find(s=>s.id===sid);if(!s)return;
+  s.done=!s.done;
+  scheduleSave();renderCalendar();
+}
+function calAddSub(pid,ph,tid,ctx){
+  const inp=document.getElementById('calsub_'+tid+'_'+ctx);
+  if(!inp)return;
+  const v=inp.value.trim();if(!v)return;
+  const p=state.projects.find(pr=>pr.id===pid);if(!p)return;
+  const t=(p.tasks[ph]||[]).find(t=>t.id===tid);if(!t)return;
+  if(!t.subtasks)t.subtasks=[];
+  t.subtasks.push({id:'s'+Date.now(),text:v,done:false});
+  inp.value='';
+  scheduleSave();renderCalendar();
 }
 
 function calToggleTask(pid,ph,tid){
