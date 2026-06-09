@@ -352,6 +352,46 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 .cal-section-head{font-size:10px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;color:var(--text3);margin-bottom:4px}
 .cal-section-body{display:flex;flex-direction:column}
 /* SUBTASK INDENT FIX — handled in main CSS above */
+/* MEETINGS */
+.mtg-layout{display:flex;flex:1;overflow:hidden}
+.mtg-list{width:220px;min-width:220px;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;background:var(--surface)}
+.mtg-list-head{padding:12px 12px 8px;display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--border);flex-shrink:0}
+.mtg-list-sect{padding:4px 8px 2px;font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)}
+.mtg-list-items{flex:1;overflow-y:auto;padding:2px 8px 8px}
+.mtg-item{display:flex;align-items:center;gap:8px;padding:8px 9px;border-radius:var(--radius-sm);cursor:pointer;margin-bottom:1px;border-left:3px solid transparent;transition:background .1s}
+.mtg-item:hover{background:var(--surface2)}
+.mtg-item.active{border-left-color:var(--accent);background:var(--surface2)}
+.mtg-item-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.mtg-item-name{flex:1;font-size:13px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mtg-item-date{font-size:10px;color:var(--text3)}
+.mtg-detail{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.mtg-detail-head{padding:10px 18px 9px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;display:flex;gap:8px;align-items:center}
+.mtg-detail-body{flex:1;overflow-y:auto;padding:14px 18px;display:flex;flex-direction:column;gap:10px}
+.mtg-section-label{font-size:10px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--text3);margin-bottom:5px}
+/* ACTIVITY HISTORY STYLE */
+.act-block{background:var(--surface);border:1px solid var(--border-md);border-radius:var(--radius);overflow:hidden}
+.act-block-head{padding:8px 14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)}
+.act-block-title{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#fff;flex:1}
+.act-block-count{font-size:10px;background:rgba(255,255,255,.2);color:#fff;border-radius:10px;padding:1px 8px}
+.act-history{display:flex;flex-direction:column}
+.act-row{display:flex;align-items:flex-start;gap:10px;padding:8px 14px;border-bottom:1px solid var(--border)}
+.act-row:last-child{border-bottom:none}
+.act-date{font-size:11px;font-weight:600;color:var(--text3);min-width:80px;padding-top:1px}
+.act-tag{font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;flex-shrink:0}
+.act-text{flex:1;font-size:12.5px;color:var(--text2);line-height:1.5}
+.act-del{background:none;border:1px solid #fca5a5;border-radius:4px;cursor:pointer;color:#ef4444;font-size:11px;padding:1px 5px;opacity:0;transition:opacity .1s}
+.act-row:hover .act-del{opacity:1}
+/* ADD NOTE SECTION */
+.act-add{padding:12px 14px;background:var(--surface2);border-top:2px solid var(--border-md);display:flex;flex-direction:column;gap:8px}
+.act-add-head{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text2)}
+.act-add-row{display:flex;gap:8px;align-items:stretch}
+.act-add-date{font-size:12px;padding:6px 8px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--surface);color:var(--text);font-family:var(--font);outline:none}
+.act-add-ta{flex:1;font-size:12.5px;padding:8px 10px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--surface);color:var(--text);font-family:var(--font);outline:none;resize:none;min-height:70px;line-height:1.5}
+.act-add-ta:focus{border-color:var(--border-strong)}
+.act-add-btn{padding:6px 14px;border-radius:var(--radius-sm);font-size:12px;font-weight:600;border:none;cursor:pointer;color:#fff;font-family:var(--font);white-space:nowrap;align-self:flex-end}
+.mtg-ta{width:100%;font-size:13px;padding:8px 10px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg);color:var(--text);font-family:var(--font);outline:none;resize:none;line-height:1.6}
+.mtg-ta:focus{border-color:var(--border-strong)}
+.mtg-task-row{display:flex;align-items:center;gap:8px;padding:5px 8px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:3px;font-size:12.5px}
 /* ARCHIVE */
 .archive-view{flex:1;overflow-y:auto;padding:16px 22px;display:flex;flex-direction:column;gap:4px}
 .archive-section-head{font-size:10px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;color:var(--text3);padding:8px 0 4px;border-top:1px solid var(--border);margin-top:8px}
@@ -392,6 +432,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
     <div class="main-tabs">
       <span class="main-tab active" id="mtTasks" onclick="switchMainTab('tasks')">☑ Tasks</span>
       <span class="main-tab" id="mtCalendar" onclick="switchMainTab('calendar')">📅 Calendar</span>
+      <span class="main-tab" id="mtMeetings" onclick="switchMainTab('meetings')">📋 Meetings</span>
       <span class="main-tab" id="mtArchive" onclick="switchMainTab('archive')">🗄 Archive</span>
     </div>
     <div class="phase-bar" id="phaseBar"></div>
@@ -455,6 +496,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
       </div>
       <div class="cal-view" id="calView" style="flex:1;overflow-y:auto;padding:14px 22px;display:grid;grid-template-columns:1fr 1fr;gap:14px;align-content:start"></div>
     </div>
+    <!-- MEETINGS PANEL -->
+    <div id="meetingsPanel" style="display:none;flex:1;overflow:hidden;flex-direction:column">
+      <div id="meetingsView" style="flex:1;overflow:hidden;display:flex"></div>
+    </div>
     <!-- ARCHIVE PANEL — inside .main -->
     <div id="archivePanel" style="display:none;flex:1;overflow:hidden;flex-direction:column">
       <div class="archive-view" id="archiveView"></div>
@@ -499,9 +544,10 @@ let addType='task';
 let activeTab='notes';
 let dragSrcId=null;
 let showImport=false;
+let activeMeeting=null;
 
 let state={
-  projects:[],
+  projects:[],meetings:[],
   activeProject:null,addingProj:false,newProjName:'',newProjColor:COLORS[0]
 };
 
@@ -1599,35 +1645,457 @@ function selProjAndClose(id){
   if(isMobile()){const sb=document.getElementById('sidebar');const ov=document.getElementById('sidebarOverlay');if(sb)sb.classList.remove('open');if(ov)ov.classList.remove('show');}
 }
 
-// MAIN TAB SWITCHING
-let mainTab='tasks';
+function newMeeting(){
+  if(!state.meetings)state.meetings=[];
+  const id='mtg'+Date.now();
+  const today=new Date().toISOString().slice(0,10);
+  const sections={};
+  MTG_SECTIONS.forEach(s=>sections[s.key]=[]);
+  state.meetings.push({id,title:'Weekly Team Meeting',date:today,recap:'',tasks:[],sections,selectedAttendees:[]});
+  activeMeeting=id;
+  renderMeetings();scheduleSave();
+}
+function selectMeeting(id){activeMeeting=id;renderMeetings();}
+function updateMeeting(id,field,val){
+  const m=state.meetings.find(x=>x.id===id);if(!m)return;
+  m[field]=val;scheduleSave();
+}
+function deleteMeeting(id){
+  if(!confirm('Delete this meeting?'))return;
+  state.meetings=state.meetings.filter(x=>x.id!==id);
+  activeMeeting=state.meetings.length?state.meetings[state.meetings.length-1].id:null;
+  renderMeetings();scheduleSave();
+}
+function addMeetingTask(mid){
+  const m=state.meetings.find(x=>x.id===mid);if(!m)return;
+  const inp=document.getElementById('mtgNewTask_'+mid);
+  const text=inp?inp.value.trim():'';
+  if(!m.tasks)m.tasks=[];
+  m.tasks.push({text:text||'',done:false,owner:'',projId:''});
+  if(inp)inp.value='';
+  renderMeetings();scheduleSave();
+}
+function toggleMeetingTask(mid,i){
+  const m=state.meetings.find(x=>x.id===mid);if(!m||!m.tasks[i])return;
+  m.tasks[i].done=!m.tasks[i].done;renderMeetings();scheduleSave();
+}
+function updateMeetingTask(mid,i,val){
+  const m=state.meetings.find(x=>x.id===mid);if(!m||!m.tasks[i])return;
+  m.tasks[i].text=val;scheduleSave();
+}
+function updateMeetingTaskOwner(mid,i,val){
+  const m=state.meetings.find(x=>x.id===mid);if(!m||!m.tasks[i])return;
+  if(val==='__add__'){addOwner();return;}
+  m.tasks[i].owner=val;scheduleSave();
+}
+function assignMeetingTask(mid,i,pid){
+  const m=state.meetings.find(x=>x.id===mid);if(!m||!m.tasks[i])return;
+  m.tasks[i].projId=pid;
+  if(pid){
+    const p=state.projects.find(pr=>pr.id===pid);
+    if(p){
+      const ph=p.phases[p.activePhase]||p.phases[0];
+      if(!p.tasks[ph])p.tasks[ph]=[];
+      p.tasks[ph].push({id:'t'+Date.now(),text:m.tasks[i].text,type:'task',done:false,
+        highlighted:false,subtasks:[],note:'From meeting: '+m.title,files:[],badge:'none',due:'none',subsCollapsed:false,doneAt:0});
+      showToast('Added to '+p.name);
+    }
+  }
+  scheduleSave();
+}
+function removeMeetingTask(mid,i){
+  const m=state.meetings.find(x=>x.id===mid);if(!m)return;
+  m.tasks.splice(i,1);renderMeetings();scheduleSave();
+}
+
 function switchMainTab(tab){
   mainTab=tab;
-  ['tasks','calendar','archive'].forEach(t=>{
-    const el=document.getElementById('mt'+t.charAt(0).toUpperCase()+t.slice(1));
+  ['tasks','calendar','meetings','archive'].forEach(t=>{
+    const id='mt'+t.charAt(0).toUpperCase()+t.slice(1);
+    const el=document.getElementById(id);
     if(el)el.className='main-tab'+(t===tab?' active':'');
   });
   const tasksContent=document.querySelector('.content');
   const calPanel=document.getElementById('calendarPanel');
+  const mtgPanel=document.getElementById('meetingsPanel');
   const arcPanel=document.getElementById('archivePanel');
   const phaseBar=document.getElementById('phaseBar');
   if(tab==='tasks'){
     if(tasksContent)tasksContent.style.display='flex';
     if(calPanel)calPanel.style.display='none';
+    if(mtgPanel)mtgPanel.style.display='none';
     if(arcPanel)arcPanel.style.display='none';
     if(phaseBar)phaseBar.style.display='';
   } else if(tab==='calendar'){
     if(tasksContent)tasksContent.style.display='none';
     if(calPanel){calPanel.style.display='flex';renderWeekStrip();renderCalendar();}
+    if(mtgPanel)mtgPanel.style.display='none';
+    if(arcPanel)arcPanel.style.display='none';
+    if(phaseBar)phaseBar.style.display='none';
+  } else if(tab==='meetings'){
+    if(tasksContent)tasksContent.style.display='none';
+    if(calPanel)calPanel.style.display='none';
+    if(mtgPanel){mtgPanel.style.display='flex';renderMeetings();}
     if(arcPanel)arcPanel.style.display='none';
     if(phaseBar)phaseBar.style.display='none';
   } else if(tab==='archive'){
     if(tasksContent)tasksContent.style.display='none';
     if(calPanel)calPanel.style.display='none';
+    if(mtgPanel)mtgPanel.style.display='none';
     if(arcPanel){arcPanel.style.display='flex';renderArchive();}
     if(phaseBar)phaseBar.style.display='none';
   }
 }
+
+// ============ MEETINGS SYSTEM ============
+// Meeting TYPES are the sidebar items — each is a permanent recurring room with running history
+const MTG_ATTENDEES=[
+  {name:'Anthony',email:'iuniformsolutions@gmail.com'},
+  {name:'Leo',email:'iuniformsolutions@gmail.com'},
+  {name:'Cliff',email:'Cliff@iuniformsolutions.com'},
+  {name:'Jose',email:'iniguezjoseb@iuniformsolutions.com'},
+  {name:'Ray',email:'IUS.warehousedept@gmail.com'},
+];
+const MTG_OWNERS=['Anthony','Leo','Cliff','Jose','Ray'];
+// Default meeting types — stored in state.meetingTypes, editable
+const DEFAULT_MTG_TYPES=[
+  {id:'warehouse',label:'Warehouse',color:'#1D9E75',icon:'📦'},
+  {id:'jose',label:'Jose Sales',color:'#D85A30',icon:'💼'},
+  {id:'cliff',label:'Cliff',color:'#378ADD',icon:'📋'},
+  {id:'leo',label:'Leo',color:'#7F77DD',icon:'🔧'},
+];
+
+function getMtgOwnerOptions(selected){
+  const owners=MTG_OWNERS.concat((state.extraOwners||[]));
+  return`<option value="">— Owner —</option>`+owners.map(o=>`<option value="${o}" ${selected===o?'selected':''}>${o}</option>`).join('')+
+    `<option value="__add__">+ Add person...</option>`;
+}
+
+function initMeetingTypes(){
+  if(!state.meetingTypes||!state.meetingTypes.length){
+    state.meetingTypes=JSON.parse(JSON.stringify(DEFAULT_MTG_TYPES));
+  }
+  // Ensure each type has its data store
+  if(!state.meetingData)state.meetingData={};
+  state.meetingTypes.forEach(t=>{
+    if(!state.meetingData[t.id]){
+      state.meetingData[t.id]={history:[],tasks:[],attendees:[],recap:''};
+    }
+  });
+}
+
+function renderMeetings(){
+  initMeetingTypes();
+  if(!state.extraOwners)state.extraOwners=[];
+  const el=document.getElementById('meetingsView');if(!el)return;
+
+  // Sidebar — meeting types as permanent rooms
+  const listItems=state.meetingTypes.map(t=>{
+    const isActive=activeMeeting===t.id;
+    const data=state.meetingData[t.id]||{};
+    const entryCount=(data.history||[]).length;
+    const openTasks=(data.tasks||[]).filter(x=>!x.done).length;
+    return`<div class="mtg-item ${isActive?'active':''}" onclick="selectMeeting('${t.id}')"
+      style="${isActive?`background:${t.color}18;border-left-color:${t.color}`:''}">
+      <span class="mtg-item-dot" style="background:${t.color}"></span>
+      <div style="flex:1;min-width:0">
+        <div class="mtg-item-name" style="${isActive?`color:${t.color};font-weight:600`:''}">${esc(t.label)}</div>
+        <div class="mtg-item-date">${entryCount} entries${openTasks?` · ${openTasks} open tasks`:''}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const sidebar=`<div class="mtg-list">
+    <div class="mtg-list-head">
+      <span style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);flex:1">Meetings</span>
+    </div>
+    <div class="mtg-list-items">${listItems}</div>
+    <div style="padding:8px;border-top:1px solid var(--border)">
+      <button class="btn" style="width:100%;font-size:11px;justify-content:center" onclick="addMeetingType()">+ Add meeting type</button>
+    </div>
+  </div>`;
+
+  const mt=state.meetingTypes.find(x=>x.id===activeMeeting);
+  const detail=mt?renderMeetingRoom(mt):`<div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;color:var(--text3)">
+    <div style="font-size:40px">📋</div>
+    <div style="font-size:13px">Select a meeting type from the left</div>
+  </div>`;
+
+  el.innerHTML=`<div class="mtg-layout">${sidebar}${detail}</div>`;
+}
+
+function renderMeetingRoom(mt){
+  const data=state.meetingData[mt.id]||{history:[],tasks:[],attendees:[],recap:''};
+  if(!data.history)data.history=[];
+  if(!data.tasks)data.tasks=[];
+  if(!data.attendees)data.attendees=[];
+
+  // Attendee buttons
+  const attBtns=MTG_ATTENDEES.map(a=>{
+    const sel=data.attendees.includes(a.name);
+    return`<button onclick="toggleRoomAttendee('${mt.id}','${a.name}')" title="${a.email}" style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1.5px solid ${sel?mt.color:'var(--border-md)'};background:${sel?mt.color:'var(--surface)'};color:${sel?'#fff':'var(--text2)'};font-family:var(--font);transition:all .12s">${a.name}</button>`;
+  }).join('');
+
+  // History rows — all entries, newest first
+  const histRows=data.history.slice().reverse().map((e,ri)=>{
+    const realIdx=data.history.length-1-ri;
+    return`<div class="act-row">
+      <span class="act-date">${e.date||''}</span>
+      <span class="act-text">${esc(e.text)}</span>
+      <button class="act-del" onclick="deleteRoomEntry('${mt.id}',${realIdx})">✕</button>
+    </div>`;
+  }).join('');
+
+  // Action task rows
+  const taskRows=data.tasks.map((t,i)=>`
+    <div class="mtg-task-row" style="${t.done?'opacity:.5':''}">
+      <input type="checkbox" ${t.done?'checked':''} onchange="toggleRoomTask('${mt.id}',${i})" style="cursor:pointer;flex-shrink:0"/>
+      <input value="${esc(t.text)}" placeholder="Action item..." style="flex:1;font-size:12.5px;border:none;background:none;font-family:var(--font);color:var(--text);outline:none;${t.done?'text-decoration:line-through':''}" oninput="updateRoomTask('${mt.id}',${i},'text',this.value)"/>
+      <select onchange="updateRoomTask('${mt.id}',${i},'owner',this.value)" style="font-size:11px;border:1px solid var(--border-md);border-radius:4px;background:var(--bg);color:var(--text2);font-family:var(--font);padding:2px 4px;max-width:110px">
+        ${getMtgOwnerOptions(t.owner)}
+      </select>
+      <select onchange="assignRoomTask('${mt.id}',${i},this.value)" style="font-size:11px;border:1px solid var(--border-md);border-radius:4px;background:var(--bg);color:var(--text2);font-family:var(--font);padding:2px 4px;max-width:110px">
+        <option value="">→ Project</option>
+        ${state.projects.map(p=>`<option value="${p.id}" ${t.projId===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}
+      </select>
+      <button onclick="removeRoomTask('${mt.id}',${i})" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;padding:0 3px">×</button>
+    </div>`).join('');
+
+  const selNames=(data.attendees||[]).join(', ')||'none selected';
+
+  return`<div class="mtg-detail">
+    <div class="mtg-detail-head" style="border-bottom:3px solid ${mt.color}">
+      <span style="font-size:20px">${mt.icon}</span>
+      <input value="${esc(mt.label)}" style="font-size:16px;font-weight:700;border:none;background:none;outline:none;flex:1;font-family:var(--font);color:${mt.color}" oninput="updateMeetingTypeName('${mt.id}',this.value)"/>
+      <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">
+        ${attBtns}
+        <button class="btn sm" onclick="deleteMeetingType('${mt.id}')" style="color:#b33;margin-left:4px">🗑</button>
+      </div>
+    </div>
+    <div class="mtg-detail-body">
+
+      <!-- ACTIVITY HISTORY -->
+      <div class="act-block">
+        <div class="act-block-head" style="background:${mt.color}">
+          <span style="font-size:15px">${mt.icon}</span>
+          <span class="act-block-title">Activity History</span>
+          <span class="act-block-count">${data.history.length} entr${data.history.length===1?'y':'ies'}</span>
+        </div>
+        <div class="act-history" style="max-height:260px;overflow-y:auto">
+          ${histRows||`<div style="padding:12px 14px;font-size:12px;color:var(--text3);font-style:italic">No entries yet — add the first note below</div>`}
+        </div>
+        <div class="act-add">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+            <span style="width:8px;height:8px;border-radius:50%;background:${mt.color};display:inline-block;flex-shrink:0"></span>
+            <span class="act-add-head">— ADD NEW NOTE</span>
+          </div>
+          <textarea class="act-add-ta" id="roomEntry_${mt.id}" placeholder="What happened? Updates? Next steps?"></textarea>
+          <div class="act-add-row" style="margin-top:6px">
+            <input type="date" class="act-add-date" id="roomEntryDate_${mt.id}" value="${new Date().toISOString().slice(0,10)}"/>
+            <div style="flex:1"></div>
+            <button class="act-add-btn" style="background:${mt.color}" onclick="addRoomEntry('${mt.id}')">Save Note</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ACTION ITEMS -->
+      <div class="act-block">
+        <div class="act-block-head" style="background:#1c1b18">
+          <span style="font-size:15px">✅</span>
+          <span class="act-block-title">Action Items</span>
+          <button onclick="addRoomTask('${mt.id}')" style="background:rgba(255,255,255,.15);border:none;border-radius:4px;color:#fff;font-size:11px;padding:3px 10px;cursor:pointer;font-family:var(--font)">+ Add</button>
+        </div>
+        <div style="padding:8px 10px;display:flex;flex-direction:column;gap:3px">
+          ${taskRows||'<div style="font-size:12px;color:var(--text3);padding:4px;font-style:italic">No action items yet</div>'}
+          <input id="roomNewTask_${mt.id}" placeholder="New action item — press Enter to add..." style="margin-top:4px;width:100%;font-size:12.5px;padding:6px 10px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg);color:var(--text);font-family:var(--font);outline:none" onkeydown="if(event.key==='Enter')addRoomTask('${mt.id}')"/>
+        </div>
+      </div>
+
+      <!-- RECAP & EMAIL -->
+      <div class="act-block">
+        <div class="act-block-head" style="background:#1d4ed8">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="white" style="flex-shrink:0"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+          <span class="act-block-title">Recap & Send Email</span>
+        </div>
+        <div style="padding:10px 14px;display:flex;flex-direction:column;gap:8px">
+          <textarea class="mtg-ta" style="min-height:70px" placeholder="Key decisions, summary for the email..." oninput="updateRoomRecap('${mt.id}',this.value)">${esc(data.recap||'')}</textarea>
+          <div style="font-size:11px;color:var(--text3)">Recipients: <strong>${selNames}</strong> — select above to change</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button onclick="sendRoomEmail('${mt.id}')" style="padding:7px 16px;border-radius:var(--radius-sm);font-size:12px;font-weight:600;border:none;background:#1d4ed8;color:#fff;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:6px">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+              Send via Gmail
+            </button>
+            <button onclick="previewRoomRecap('${mt.id}')" class="btn">👁 Preview</button>
+            <button onclick="copyRoomRecap('${mt.id}')" class="btn">⎘ Copy</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>`;
+}
+
+function selectMeeting(id){activeMeeting=id;renderMeetings();}
+
+function addMeetingType(){
+  const label=prompt('Meeting type name (e.g. "Manufacturing"):');
+  if(!label||!label.trim())return;
+  initMeetingTypes();
+  const colors=['#1D9E75','#D85A30','#378ADD','#7F77DD','#D4537E','#BA7517','#639922','#888780'];
+  const icons=['📋','💬','🔧','📊','📦','💼','🗂','⚙'];
+  const id='mt_'+Date.now();
+  const idx=state.meetingTypes.length;
+  state.meetingTypes.push({id,label:label.trim(),color:colors[idx%colors.length],icon:icons[idx%icons.length]});
+  state.meetingData[id]={history:[],tasks:[],attendees:[],recap:''};
+  activeMeeting=id;
+  scheduleSave();renderMeetings();
+}
+function updateMeetingTypeName(id,val){
+  const t=state.meetingTypes.find(x=>x.id===id);if(!t)return;
+  t.label=val;scheduleSave();
+}
+function deleteMeetingType(id){
+  if(!confirm('Delete this meeting type and all its history?'))return;
+  state.meetingTypes=state.meetingTypes.filter(x=>x.id!==id);
+  delete state.meetingData[id];
+  activeMeeting=state.meetingTypes.length?state.meetingTypes[0].id:null;
+  scheduleSave();renderMeetings();
+}
+function toggleRoomAttendee(mid,name){
+  initMeetingTypes();
+  const data=state.meetingData[mid];if(!data)return;
+  if(!data.attendees)data.attendees=[];
+  const idx=data.attendees.indexOf(name);
+  if(idx>=0)data.attendees.splice(idx,1);else data.attendees.push(name);
+  scheduleSave();renderMeetings();
+}
+function addRoomEntry(mid){
+  const ta=document.getElementById('roomEntry_'+mid);
+  const dateEl=document.getElementById('roomEntryDate_'+mid);
+  const text=ta?ta.value.trim():'';if(!text)return;
+  const data=state.meetingData[mid];if(!data)return;
+  if(!data.history)data.history=[];
+  data.history.push({text,date:dateEl?dateEl.value:new Date().toISOString().slice(0,10)});
+  if(ta)ta.value='';
+  scheduleSave();renderMeetings();
+}
+function deleteRoomEntry(mid,idx){
+  const data=state.meetingData[mid];if(!data||!data.history)return;
+  data.history.splice(idx,1);scheduleSave();renderMeetings();
+}
+function addRoomTask(mid){
+  const inp=document.getElementById('roomNewTask_'+mid);
+  const text=inp?inp.value.trim():'';
+  const data=state.meetingData[mid];if(!data)return;
+  if(!data.tasks)data.tasks=[];
+  data.tasks.push({text:text||'',done:false,owner:'',projId:''});
+  if(inp)inp.value='';
+  scheduleSave();renderMeetings();
+}
+function toggleRoomTask(mid,i){
+  const data=state.meetingData[mid];if(!data||!data.tasks[i])return;
+  data.tasks[i].done=!data.tasks[i].done;scheduleSave();renderMeetings();
+}
+function updateRoomTask(mid,i,field,val){
+  const data=state.meetingData[mid];if(!data||!data.tasks[i])return;
+  if(val==='__add__'){addOwner();return;}
+  data.tasks[i][field]=val;scheduleSave();
+}
+function assignRoomTask(mid,i,pid){
+  const data=state.meetingData[mid];if(!data||!data.tasks[i])return;
+  data.tasks[i].projId=pid;
+  if(pid){
+    const p=state.projects.find(pr=>pr.id===pid);
+    if(p){
+      const ph=p.phases[p.activePhase]||p.phases[0];
+      if(!p.tasks[ph])p.tasks[ph]=[];
+      const mt=state.meetingTypes.find(x=>x.id===mid);
+      p.tasks[ph].push({id:'t'+Date.now(),text:data.tasks[i].text,type:'task',done:false,
+        highlighted:false,subtasks:[],note:'From meeting: '+(mt?mt.label:''),files:[],badge:'none',due:'none',subsCollapsed:false,doneAt:0});
+      showToast('Added to '+p.name);
+    }
+  }
+  scheduleSave();
+}
+function removeRoomTask(mid,i){
+  const data=state.meetingData[mid];if(!data)return;
+  data.tasks.splice(i,1);scheduleSave();renderMeetings();
+}
+function updateRoomRecap(mid,val){
+  const data=state.meetingData[mid];if(!data)return;
+  data.recap=val;scheduleSave();
+}
+function addOwner(){
+  const name=prompt('Enter name:');if(!name||!name.trim())return;
+  if(!state.extraOwners)state.extraOwners=[];
+  if(!state.extraOwners.includes(name.trim()))state.extraOwners.push(name.trim());
+  scheduleSave();renderMeetings();
+}
+function buildRoomRecap(mid){
+  initMeetingTypes();
+  const mt=state.meetingTypes.find(x=>x.id===mid);
+  const data=state.meetingData[mid]||{};
+  const last=(data.history||[]).slice(-3).map(e=>`${e.date}: ${e.text}`).join('\n');
+  const tasks=(data.tasks||[]).filter(t=>!t.done).map(t=>`  ○ ${t.text}${t.owner?' — '+t.owner:''}`).join('\n');
+  const done=(data.tasks||[]).filter(t=>t.done).map(t=>`  ✓ ${t.text}`).join('\n');
+  return`${mt?mt.icon+' ':''} MEETING RECAP: ${mt?mt.label:'Meeting'}
+Date: ${new Date().toLocaleDateString()}
+${'─'.repeat(44)}
+
+${last?'RECENT ACTIVITY:\n'+last+'\n\n':''}${data.recap?'SUMMARY:\n'+data.recap+'\n\n':''}${tasks?'OPEN ACTION ITEMS:\n'+tasks+'\n\n':''}${done?'COMPLETED:\n'+done+'\n':''}`.trim();
+}
+function copyRoomRecap(mid){
+  navigator.clipboard.writeText(buildRoomRecap(mid)).then(()=>showToast('Recap copied!'));
+}
+function previewRoomRecap(mid){
+  const text=buildRoomRecap(mid);
+  const div=document.createElement('div');
+  div.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:500;display:flex;align-items:center;justify-content:center';
+  div.innerHTML=`<div style="background:var(--surface);border-radius:var(--radius);padding:24px;width:560px;max-height:80vh;display:flex;flex-direction:column;gap:12px;box-shadow:0 12px 40px rgba(0,0,0,.2)">
+    <div style="display:flex;align-items:center;gap:10px"><span style="font-size:14px;font-weight:600;flex:1">Recap Preview</span><button class="btn sm" onclick="this.closest('[style*=fixed]').remove()">✕</button></div>
+    <pre style="flex:1;overflow-y:auto;font-size:12px;font-family:var(--mono);background:var(--bg);padding:12px;border-radius:var(--radius-sm);white-space:pre-wrap;line-height:1.6;max-height:50vh">${esc(text)}</pre>
+    <div style="display:flex;gap:8px">
+      <button class="btn dark" onclick="copyRoomRecap('${mid}');this.closest('[style*=fixed]').remove()">⎘ Copy</button>
+      <button class="btn" onclick="sendRoomEmail('${mid}')">✉ Send Email</button>
+    </div>
+  </div>`;
+  document.body.appendChild(div);
+}
+function sendRoomEmail(mid){
+  initMeetingTypes();
+  const data=state.meetingData[mid]||{};
+  const selected=data.attendees||[];
+  if(!selected.length){showToast('Select attendees first using the buttons in the header');return;}
+  const toEmails=MTG_ATTENDEES.filter(a=>selected.includes(a.name)).map(a=>a.email);
+  if(!toEmails.length){showToast('No emails found for selected attendees');return;}
+  if(!scriptUrl){showToast('Connect to Sheets first');return;}
+  const mt=state.meetingTypes.find(x=>x.id===mid);
+  const subject=(mt?mt.label:'Meeting')+' Recap — '+new Date().toLocaleDateString();
+  const body=buildRoomRecap(mid);
+  setSyncBadge('busy');
+  fetch(scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'sendEmail',to:toEmails.join(','),subject,body})})
+    .then(()=>{setSyncBadge('ok');showToast('Email sent to '+toEmails.join(', '));})
+    .catch(()=>{
+      setSyncBadge('err');
+      window.open(`mailto:${encodeURIComponent(toEmails.join(','))}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`,'_blank');
+      showToast('Opened email client as fallback');
+    });
+}
+
+// Keep old meeting functions as stubs for backward compat with any saved data
+function renderMeetingDetail(m){return'';}
+function toggleMtgAttendee(mid,name){}
+function toggleSectAttendee(mid,key,name){}
+function sendGmailRecap(mid){sendRoomEmail(mid);}
+function addMtgEntry(mid,key){addRoomEntry(mid);}
+function deleteMtgEntry(mid,key,idx){deleteRoomEntry(mid,idx);}
+function newMeeting(){addMeetingType();}
+function buildMeetingRecap(mid){return buildRoomRecap(mid);}
+function copyMeetingRecap(mid){copyRoomRecap(mid);}
+function previewMeetingRecap(mid){previewRoomRecap(mid);}
+function sendMeetingRecapEmail(mid){sendRoomEmail(mid);}
+function toggleMtgHistory(){}
+
 
 // 2-WEEK STRIP
 function renderWeekStrip(){
@@ -1681,45 +2149,47 @@ function cycleDueById(pid,ph,tid){
   renderCalendar();scheduleSave();
 }
 
-// CALENDAR VIEW — weekly layout with inline task interaction
+// CALENDAR VIEW — see new renderCalendar below
+
+// Calendar collapsed sections state
+const calCollapsed={week:false,unsched:false,someday:false};
+
+// CALENDAR VIEW
 function renderCalendar(){
   const el=document.getElementById('calView');
   if(!el)return;
 
-  // Build day buckets: today, mon-sun of current week, someday, unscheduled
   const now=new Date();
   const todayStr=now.toDateString();
-  const dayOfWeek=now.getDay(); // 0=sun
-  const weekStart=new Date(now);weekStart.setDate(now.getDate()-(dayOfWeek===0?6:dayOfWeek-1)); // Mon
-  const weekDays=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  const weekDates=weekDays.map((_,i)=>{const d=new Date(weekStart);d.setDate(weekStart.getDate()+i);return d;});
+  const todayDow=now.getDay(); // 0=sun
 
-  const buckets={today:[],week:[],someday:[],none:[],incomplete:[]};
+  const buckets={today:[],week:[],someday:[],none:[],notDone:[]};
   state.projects.forEach(p=>{
     p.phases.forEach(ph=>{
       (p.tasks[ph]||[]).forEach(t=>{
-        if(t.done){
-          // Done tasks with a due date = recently completed, show in incomplete section
-          if((t.due==='today'||t.due==='week')&&t.doneAt&&(Date.now()-t.doneAt<7*24*60*60*1000)){
-            buckets.incomplete.push({t,p,ph});
-          }
-        } else {
-          const due=t.due||'none';
-          if(buckets[due])buckets[due].push({t,p,ph});
-          else buckets.none.push({t,p,ph});
-        }
+        if(t.done) return; // skip done tasks — they go to archive on check
+        const due=t.due||'none';
+        if(buckets[due])buckets[due].push({t,p,ph});
+        else buckets.none.push({t,p,ph});
       });
     });
   });
 
+  // Not completed = tasks that were due "today" but today has passed (yesterday's leftovers)
+  // We detect this by checking if a task has due=today and was NOT completed
+  // They stay in Today section — user can reschedule or check off
+
   const renderCalTask=(t,p,ph,ctx)=>{
     const subs=t.subtasks||[];
     const subsDone=subs.filter(s=>s.done).length;
+    const allSubsDone=subs.length===0||subsDone===subs.length;
+    const recurLabel=t.recur?`<span style="font-size:9px;background:#e8f4ff;color:#1a6b9b;border-radius:3px;padding:1px 5px;border:1px solid #b0d8f5;flex-shrink:0">↻ ${t.recur}</span>`:'';
     return`<div class="cal-task-card" id="cal_tc_${t.id}_${ctx}">
       <div class="cal-task-main">
-        <input type="checkbox" class="cal-cb" ${t.done?'checked':''} onchange="calToggleTask('${p.id}','${ph}','${t.id}')" onclick="event.stopPropagation()"/>
+        <input type="checkbox" class="cal-cb" ${t.done?'checked':''} onchange="calToggleTask('${p.id}','${ph}','${t.id}')" onclick="event.stopPropagation()" title="${allSubsDone?'Mark complete':'Complete all subtasks first'}"/>
         <span class="cal-proj-dot" style="background:${p.color}"></span>
-        <span class="cal-task-text ${t.done?'done':''}" onclick="navToTask('${p.id}','${ph}','${t.id}')" title="Click to go to task">${esc(t.text)}</span>
+        <span class="cal-task-text ${t.done?'done':''}" onclick="navToTask('${p.id}','${ph}','${t.id}')" title="Go to task">${esc(t.text)}</span>
+        ${recurLabel}
         <span class="cal-proj-label">${esc(p.name)}</span>
         <span class="due-badge due-${t.due||'none'}" onclick="cycleDueById('${p.id}','${ph}','${t.id}')" style="flex-shrink:0">${DUE_LABELS[t.due||'none']}</span>
       </div>
@@ -1728,31 +2198,44 @@ function renderCalendar(){
           <input type="checkbox" class="cal-sub-cb" ${s.done?'checked':''} onchange="calToggleSub('${p.id}','${ph}','${t.id}','${s.id}')"/>
           <span class="${s.done?'done':''}" style="font-size:11.5px;color:var(--text2);flex:1">${esc(s.text)}</span>
         </div>`).join('')}
-        <div class="cal-add-sub">
-          <input class="cal-sub-inp" id="calsub_${t.id}_${ctx}" placeholder="+ subtask..." onkeydown="if(event.key==='Enter')calAddSub('${p.id}','${ph}','${t.id}','${ctx}')"/>
-        </div>
-      </div>`:`<div class="cal-add-sub" style="padding-left:46px">
-        <input class="cal-sub-inp" id="calsub_${t.id}_${ctx}" placeholder="+ subtask..." onkeydown="if(event.key==='Enter')calAddSub('${p.id}','${ph}','${t.id}','${ctx}')"/>
-      </div>`}
+        <div class="cal-add-sub"><input class="cal-sub-inp" id="calsub_${t.id}_${ctx}" placeholder="+ subtask..." onkeydown="if(event.key==='Enter')calAddSub('${p.id}','${ph}','${t.id}','${ctx}')"/></div>
+      </div>`:`<div class="cal-add-sub" style="padding-left:46px"><input class="cal-sub-inp" id="calsub_${t.id}_${ctx}" placeholder="+ subtask..." onkeydown="if(event.key==='Enter')calAddSub('${p.id}','${ph}','${t.id}','${ctx}')"/></div>`}
     </div>`;
   };
 
-  const renderSection=(label,color,items,ctx)=>`
-    <div class="cal-section">
-      <div class="cal-section-head" style="color:${color}">${label} <span style="font-weight:400;opacity:.6;font-size:10px">${items.length} task${items.length!==1?'s':''}</span></div>
-      <div class="cal-section-body">
-        ${items.length?items.map(({t,p,ph})=>renderCalTask(t,p,ph,ctx)).join('')
-          :`<div style="font-size:12px;color:var(--text3);padding:6px 2px;font-style:italic">Nothing here</div>`}
-      </div>
-    </div>`;
+  const toggle=(key)=>`<button onclick="calCollapsed['${key}']=!calCollapsed['${key}'];renderCalendar()" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--text3);padding:0 4px">${calCollapsed[key]?'▶':'▼'}</button>`;
 
-  // Split week items by actual day (mon-sun)
-  const weekByDay=weekDates.map(d=>{
-    // "week" due tasks — show all on their appropriate column; for now show under week
-    return {date:d,label:weekDays[weekDates.indexOf(d)],items:[]};
-  });
-  // Add "today" tasks to today's column too
-  const todayIdx=weekDates.findIndex(d=>d.toDateString()===todayStr);
+  // Quick-add panel (top-right)
+  const projOptions=state.projects.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
+  const quickAdd=`<div style="background:var(--surface);border:1px solid var(--border-md);border-radius:var(--radius);padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+    <div style="font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.05em;text-transform:uppercase">＋ Quick Add Task</div>
+    <input id="calQaText" style="font-size:13px;padding:7px 10px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg);color:var(--text);font-family:var(--font);outline:none;width:100%" placeholder="Task name..." onkeydown="if(event.key==='Enter')calQuickAdd()"/>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+      <select id="calQaProject" onchange="calQaUpdatePhases()" style="font-size:12px;padding:6px 8px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg);color:var(--text);font-family:var(--font);outline:none">${projOptions}</select>
+      <select id="calQaPhase" style="font-size:12px;padding:6px 8px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg);color:var(--text);font-family:var(--font);outline:none"></select>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+      <select id="calQaDue" style="font-size:12px;padding:6px 8px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg);color:var(--text);font-family:var(--font);outline:none">
+        <option value="today">Today</option>
+        <option value="week">This week</option>
+        <option value="someday">Someday</option>
+        <option value="none">Unscheduled</option>
+      </select>
+      <select id="calQaRecur" style="font-size:12px;padding:6px 8px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg);color:var(--text);font-family:var(--font);outline:none">
+        <option value="">No repeat</option>
+        <option value="daily">Every day</option>
+        <option value="weekly">Every week</option>
+        <option value="monday">Every Monday</option>
+        <option value="tuesday">Every Tuesday</option>
+        <option value="wednesday">Every Wednesday</option>
+        <option value="thursday">Every Thursday</option>
+        <option value="friday">Every Friday</option>
+        <option value="biweekly">Every 2 weeks</option>
+        <option value="monthly">Every month</option>
+      </select>
+    </div>
+    <button class="btn dark" onclick="calQuickAdd()" style="width:100%;justify-content:center">Add Task</button>
+  </div>`;
 
   el.innerHTML=`
     <div style="display:flex;flex-direction:column;gap:6px">
@@ -1763,11 +2246,13 @@ function renderCalendar(){
         :`<div style="font-size:12px;color:var(--text3);padding:6px 0;font-style:italic">No tasks due today</div>`}
     </div>
     <div style="display:flex;flex-direction:column;gap:6px">
-      <div style="font-size:11px;font-weight:600;color:#7a5c00;letter-spacing:.06em;text-transform:uppercase;padding-bottom:6px;border-bottom:2px solid #fde68a">
-        📆 This Week
+      ${quickAdd}
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;grid-column:1/-1">
+      <div style="font-size:11px;font-weight:600;color:#7a5c00;letter-spacing:.06em;text-transform:uppercase;padding-bottom:6px;border-bottom:2px solid #fde68a;display:flex;align-items:center;gap:4px">
+        ${toggle('week')}📆 This Week <span style="font-weight:400;opacity:.6;font-size:10px">${buckets.week.length}</span>
       </div>
-      ${buckets.week.length?buckets.week.map(({t,p,ph})=>renderCalTask(t,p,ph,'week')).join('')
-        :`<div style="font-size:12px;color:var(--text3);padding:6px 0;font-style:italic">No tasks this week</div>`}
+      ${calCollapsed.week?'':(buckets.week.length?buckets.week.map(({t,p,ph})=>renderCalTask(t,p,ph,'week')).join(''):`<div style="font-size:12px;color:var(--text3);padding:6px 0;font-style:italic">No tasks this week</div>`)}
     </div>
     <div style="display:flex;flex-direction:column;gap:6px">
       <div style="font-size:11px;font-weight:600;color:#6b6860;letter-spacing:.06em;text-transform:uppercase;padding-bottom:6px;border-bottom:2px solid var(--border-md)">
@@ -1777,38 +2262,38 @@ function renderCalendar(){
         :`<div style="font-size:12px;color:var(--text3);padding:6px 0;font-style:italic">Nothing planned yet</div>`}
     </div>
     <div style="display:flex;flex-direction:column;gap:6px">
-      <div style="font-size:11px;font-weight:600;color:#a8a59f;letter-spacing:.06em;text-transform:uppercase;padding-bottom:6px;border-bottom:2px solid var(--border)">
-        Unscheduled
+      <div style="font-size:11px;font-weight:600;color:#a8a59f;letter-spacing:.06em;text-transform:uppercase;padding-bottom:6px;border-bottom:2px solid var(--border);display:flex;align-items:center;gap:4px">
+        ${toggle('unsched')}Unscheduled <span style="font-weight:400;opacity:.6;font-size:10px">${buckets.none.length}</span>
       </div>
-      ${buckets.none.length?buckets.none.map(({t,p,ph})=>renderCalTask(t,p,ph,'unsched')).join('')
-        :`<div style="font-size:12px;color:var(--text3);padding:6px 0;font-style:italic">All tasks scheduled ✓</div>`}
-    </div>
-    ${buckets.incomplete.length?`<div style="grid-column:1/-1;display:flex;flex-direction:column;gap:6px;padding-top:10px;border-top:1px solid var(--border-md)">
-      <div style="font-size:11px;font-weight:600;color:#9b2020;letter-spacing:.06em;text-transform:uppercase;padding-bottom:6px;border-bottom:2px solid #fca5a5">
-        ✓ Recently Completed
-      </div>
-      ${buckets.incomplete.map(({t,p,ph})=>renderCalTask(t,p,ph,'done')).join('')}
-    </div>`:''}
-    <div style="grid-column:1/-1;display:flex;flex-direction:column;gap:6px;padding-top:10px;border-top:1px solid var(--border-md)">
-      <div style="font-size:11px;font-weight:600;color:#b33;letter-spacing:.06em;text-transform:uppercase;padding-bottom:6px;border-bottom:2px solid #fca5a5">
-        ⚠ Not Completed — needs attention
-      </div>
-      ${(()=>{
-        const overdue=[];
-        state.projects.forEach(p=>{p.phases.forEach(ph=>{(p.tasks[ph]||[]).filter(t=>!t.done&&(t.due==='today'||t.due==='week')).forEach(t=>{
-          // Only show if task hasn't been actively updated recently — use it as a catch-all overflow
-          overdue.push({t,p,ph});
-        });});});
-        return overdue.length
-          ?'<div style="font-size:12px;color:var(--text3);padding:6px 0;font-style:italic">Tasks marked Today or This Week that are still open appear in the sections above.</div>'
-          :'<div style="font-size:12px;color:var(--text3);padding:6px 0;font-style:italic">All scheduled tasks completed ✓</div>';
-      })()}
-      ${(()=>{
-        const done=[];
-        state.projects.forEach(p=>{p.phases.forEach(ph=>{(p.tasks[ph]||[]).filter(t=>t.done&&t.due&&t.due!=='none'&&t.due!=='someday').slice(0,5).forEach(t=>done.push({t,p,ph}));});});
-        return done.length?done.map(({t,p,ph})=>renderCalTask(t,p,ph,'completed')).join(''):'';
-      })()}
+      ${calCollapsed.unsched?'':(buckets.none.length?buckets.none.map(({t,p,ph})=>renderCalTask(t,p,ph,'unsched')).join(''):`<div style="font-size:12px;color:var(--text3);padding:6px 0;font-style:italic">All tasks scheduled ✓</div>`)}
     </div>`;
+
+  // Init phase dropdown
+  setTimeout(calQaUpdatePhases, 50);
+}
+
+function calQaUpdatePhases(){
+  const pid=document.getElementById('calQaProject')?.value;
+  const sel=document.getElementById('calQaPhase');if(!sel)return;
+  const p=state.projects.find(pr=>pr.id===pid);
+  if(!p){sel.innerHTML='';return;}
+  sel.innerHTML=p.phases.map((ph,i)=>`<option value="${esc(ph)}">${esc(ph)}</option>`).join('');
+}
+
+function calQuickAdd(){
+  const text=document.getElementById('calQaText')?.value.trim();if(!text)return;
+  const pid=document.getElementById('calQaProject')?.value;
+  const ph=document.getElementById('calQaPhase')?.value;
+  const due=document.getElementById('calQaDue')?.value||'today';
+  const recur=document.getElementById('calQaRecur')?.value||'';
+  const p=state.projects.find(pr=>pr.id===pid);if(!p)return;
+  if(!p.tasks[ph])p.tasks[ph]=[];
+  p.tasks[ph].push({id:'t'+Date.now(),text,type:'task',done:false,highlighted:false,
+    subtasks:[],note:'',files:[],badge:'none',due,subsCollapsed:false,doneAt:0,
+    recur:recur||null});
+  document.getElementById('calQaText').value='';
+  scheduleSave();renderCalendar();
+  showToast('Added to '+p.name+' → '+ph);
 }
 
 // Calendar task interactions
@@ -1818,7 +2303,6 @@ function navToTask(pid,ph,tid){
   selProj(pid);
   if(phIdx>=0)selPhase(phIdx);
   switchMainTab('tasks');
-  // Scroll to and expand the task
   setTimeout(()=>{
     expandedTasks[tid]=true;
     renderTasks(getProj());
@@ -1831,10 +2315,19 @@ function navToTask(pid,ph,tid){
 function calToggleTask(pid,ph,tid){
   const p=state.projects.find(pr=>pr.id===pid);if(!p)return;
   const t=(p.tasks[ph]||[]).find(t=>t.id===tid);if(!t)return;
-  t.done=!t.done;
-  clearTimeout(saveTimer);_saveVersion++;pushToSheet();
-  renderCalendar();
-  // also update task view if visible
+  const subs=t.subtasks||[];
+  const allSubsDone=subs.length===0||subs.every(s=>s.done);
+  if(!allSubsDone){showToast('Complete all subtasks first');return;}
+  t.done=true;t.doneAt=Date.now();
+  if(!p.archive)p.archive=[];
+  p.archive.push({...t,archivedAt:Date.now(),archivedFrom:ph});
+  p.tasks[ph]=(p.tasks[ph]||[]).filter(x=>x.id!==tid);
+  if(t.recur){
+    const next={...t,id:'t'+Date.now(),done:false,doneAt:0};
+    delete next.archivedAt;delete next.archivedFrom;
+    p.tasks[ph].push(next);
+  }
+  scheduleSave();renderCalendar();
   if(mainTab==='tasks'&&state.activeProject===pid)renderTasks(p);
 }
 function calToggleSub(pid,ph,tid,sid){
@@ -1984,10 +2477,11 @@ function connectSheet(){
 
 function scheduleSave(){
   if(!scriptUrl)return;
+  // Only save on user-initiated actions — never on tab focus or load
   _saveVersion++;
   clearTimeout(saveTimer);
   setSyncBadge('busy');
-  saveTimer=setTimeout(pushToSheet,1000);
+  saveTimer=setTimeout(pushToSheet,1500);
 }
 
 function pushToSheet(){
@@ -2012,6 +2506,9 @@ function pushToSheet(){
   const payload=JSON.stringify({
     action:'save',
     projects:state.projects,
+    meetings:state.meetings||[],
+    meetingTypes:state.meetingTypes||[],
+    meetingData:state.meetingData||{},
     version:_saveVersion,
     tabId:_tabId,
     savedAt:Date.now()
@@ -2121,6 +2618,11 @@ function loadFromSheets(silent){
         });
       }
       state.projects=ordered;
+      if(data.meetings)state.meetings=data.meetings;
+      if(!state.meetings)state.meetings=[];
+      if(data.meetingTypes)state.meetingTypes=data.meetingTypes;
+      if(data.meetingData)state.meetingData=data.meetingData;
+      if(!state.meetingData)state.meetingData={};
       restorePosition();
       const stillExists=state.projects.find(p=>p.id===state.activeProject);
       if(!stillExists)state.activeProject=state.projects[0].id;
