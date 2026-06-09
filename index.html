@@ -2095,11 +2095,33 @@ function sendRoomEmail(mid){
   const body=buildRoomRecap(mid);
   setSyncBadge('busy');
   fetch(scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'sendEmail',to:toEmails.join(','),subject,body})})
-    .then(()=>{setSyncBadge('ok');showToast('Email sent to '+toEmails.join(', '));})
-    .catch(()=>{
+    .then(()=>{
+      setSyncBadge('ok');
+      // Show confirmation modal
+      const div=document.createElement('div');
+      div.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:500;display:flex;align-items:center;justify-content:center';
+      div.innerHTML=`<div style="background:var(--surface);border-radius:var(--radius);padding:28px 32px;width:380px;display:flex;flex-direction:column;gap:14px;box-shadow:0 12px 40px rgba(0,0,0,.25);text-align:center">
+        <div style="font-size:40px">✉️</div>
+        <div style="font-size:16px;font-weight:700;color:var(--text)">Email Sent!</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.6">Recap sent to:<br><strong>${toEmails.join('<br>')}</strong></div>
+        <button class="btn dark" onclick="this.closest('[style*=fixed]').remove()" style="justify-content:center;padding:10px;font-size:14px">Done</button>
+      </div>`;
+      document.body.appendChild(div);
+    })
+    .catch(err=>{
       setSyncBadge('err');
-      window.open(`mailto:${encodeURIComponent(toEmails.join(','))}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`,'_blank');
-      showToast('Opened email client as fallback');
+      // Fallback: show error with mailto option
+      const div=document.createElement('div');
+      div.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:500;display:flex;align-items:center;justify-content:center';
+      div.innerHTML=`<div style="background:var(--surface);border-radius:var(--radius);padding:24px;width:380px;display:flex;flex-direction:column;gap:12px;box-shadow:0 12px 40px rgba(0,0,0,.25)">
+        <div style="font-size:15px;font-weight:700;color:#dc2626">Send Failed</div>
+        <div style="font-size:13px;color:var(--text2)">The Gmail send failed. Try opening in your email client instead.</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn dark" onclick="window.open('mailto:${encodeURIComponent(toEmails.join(','))}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}','_blank');this.closest('[style*=fixed]').remove()">Open Email Client</button>
+          <button class="btn" onclick="this.closest('[style*=fixed]').remove()">Cancel</button>
+        </div>
+      </div>`;
+      document.body.appendChild(div);
     });
 }
 
@@ -2128,30 +2150,58 @@ function renderWeekStrip(){
   const dayOfWeek=now.getDay();
   const mondayOffset=dayOfWeek===0?-6:1-dayOfWeek;
   const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  const todayTasks=[],weekTasks=[];
+
+  // Build per-day task lists (deduplicated by task id)
+  const dayTaskMap={}; // key: date string, value: [{text,color}]
+  const seenIds=new Set();
   state.projects.forEach(p=>{p.phases.forEach(ph=>{(p.tasks[ph]||[]).filter(t=>!t.done).forEach(t=>{
-    if(t.due==='today')todayTasks.push(t.text);
-    else if(t.due==='week')weekTasks.push(t.text);
+    if(seenIds.has(t.id))return;seenIds.add(t.id);
+    // If task has a specific scheduledDate, show on that day
+    if(t.scheduledDate){
+      const k=new Date(t.scheduledDate+'T00:00:00').toDateString();
+      if(!dayTaskMap[k])dayTaskMap[k]=[];
+      dayTaskMap[k].push({text:t.text,color:p.color});
+    } else if(t.due==='today'){
+      if(!dayTaskMap[todayStr])dayTaskMap[todayStr]=[];
+      dayTaskMap[todayStr].push({text:t.text,color:p.color});
+    } else if(t.due==='week'){
+      // Spread week tasks across Mon-Fri of current week evenly
+      // For display, show on the nearest upcoming weekday
+      const d=new Date(now);
+      const dow=d.getDay();
+      // Show on tomorrow or first weekday if weekend
+      const targetOffset=dow===0?1:dow===6?2:1;
+      const target=new Date(d);target.setDate(d.getDate()+targetOffset);
+      const k=target.toDateString();
+      if(!dayTaskMap[k])dayTaskMap[k]=[];
+      dayTaskMap[k].push({text:t.text,color:p.color});
+    }
   });});});
+
   const cells=[];
   for(let w=0;w<2;w++){
     for(let d=0;d<7;d++){
       const offset=mondayOffset+(w*7)+d;
       const date=new Date(now);date.setDate(now.getDate()+offset);
       const isToday=date.toDateString()===todayStr;
-      const isThisWeek=w===0;
-      const taskList=isToday?todayTasks:(isThisWeek?weekTasks:[]);
-      const dots=taskList.slice(0,3).map(t=>`<div style="font-size:9px;color:${isToday?'#fff':'var(--text2)'};line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.85;max-width:100%">${esc(t.slice(0,16))}</div>`).join('');
-      const more=taskList.length>3?`<div style="font-size:9px;opacity:.55;color:${isToday?'#fff':'var(--text3)'}">+${taskList.length-3}</div>`:'';
-      cells.push(`<div style="display:flex;flex-direction:column;align-items:center;border-radius:6px;padding:5px 4px;background:${isToday?'var(--accent)':'var(--surface2)'};border:1px solid ${isToday?'transparent':'var(--border)'};min-height:52px">
-        <div style="font-size:9px;font-weight:600;color:${isToday?'rgba(255,255,255,.7)':'var(--text3)'};text-transform:uppercase;letter-spacing:.04em">${days[d]}</div>
-        <div style="font-size:13px;font-weight:700;color:${isToday?'#fff':'var(--text)'};line-height:1.3">${date.getDate()}</div>
+      const dayKey=date.toDateString();
+      const tasks=dayTaskMap[dayKey]||[];
+      const dots=tasks.slice(0,3).map(t=>`<div style="display:flex;align-items:center;gap:2px;width:100%">
+        <span style="width:5px;height:5px;border-radius:50%;background:${isToday?'rgba(255,255,255,.7)':t.color};flex-shrink:0"></span>
+        <span style="font-size:9px;color:${isToday?'rgba(255,255,255,.85)':'var(--text2)'};line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${esc(t.text.slice(0,14))}</span>
+      </div>`).join('');
+      const more=tasks.length>3?`<div style="font-size:9px;opacity:.6;color:${isToday?'#fff':'var(--text3)'}">+${tasks.length-3}</div>`:'';
+      cells.push(`<div style="display:flex;flex-direction:column;border-radius:6px;padding:6px 5px 4px;background:${isToday?'var(--accent)':'var(--surface)'};border:1.5px solid ${isToday?'transparent':tasks.length?'var(--border-md)':'var(--border)'};min-height:68px;cursor:default;overflow:hidden">
+        <div style="display:flex;align-items:baseline;gap:3px;margin-bottom:3px">
+          <span style="font-size:9px;font-weight:600;color:${isToday?'rgba(255,255,255,.6)':'var(--text3)'};text-transform:uppercase">${days[d]}</span>
+          <span style="font-size:14px;font-weight:800;color:${isToday?'#fff':'var(--text)'};line-height:1">${date.getDate()}</span>
+        </div>
         ${dots}${more}
       </div>`);
     }
   }
   el.innerHTML=cells.join('');
-  el.style.cssText='display:grid;grid-template-columns:repeat(14,1fr);gap:3px';
+  el.style.cssText='display:grid;grid-template-columns:repeat(14,1fr);gap:4px';
 }
 
 // DUE DATES
@@ -2173,11 +2223,22 @@ function cycleDueById(pid,ph,tid){
 function renderCalendar(){
   renderWeekStrip();
   const now=new Date();
+  const todayStr=now.toDateString();
+  const seenIds=new Set();
   const buckets={today:[],week:[],someday:[],none:[]};
   state.projects.forEach(p=>{p.phases.forEach(ph=>{(p.tasks[ph]||[]).forEach(t=>{
-    if(t.done)return;
+    if(t.done||seenIds.has(t.id))return;
+    seenIds.add(t.id);
     const due=t.due||'none';
-    if(buckets[due])buckets[due].push({t,p,ph});else buckets.none.push({t,p,ph});
+    // If task has a scheduledDate that is today, show in Today
+    if(t.scheduledDate){
+      const sd=new Date(t.scheduledDate+'T00:00:00');
+      if(sd.toDateString()===todayStr){buckets.today.push({t,p,ph});}
+      else{buckets.week.push({t,p,ph});}
+      return;
+    }
+    if(buckets[due])buckets[due].push({t,p,ph});
+    else buckets.none.push({t,p,ph});
   });});});
 
   const renderCalTask=(t,p,ph,ctx)=>{
@@ -2185,13 +2246,15 @@ function renderCalendar(){
     const allSubsDone=subs.length===0||subs.every(s=>s.done);
     const recurLabel=t.recur?`<span style="font-size:9px;background:var(--q-bg);color:var(--q-text);border-radius:3px;padding:1px 6px;border:1px solid var(--q-border);flex-shrink:0">↻ ${t.recur}</span>`:'';
     return`<div class="cal-task-card" id="cal_tc_${t.id}_${ctx}">
-      <div class="cal-task-main">
-        <input type="checkbox" class="cal-cb" onchange="calToggleTask('${p.id}','${ph}','${t.id}')" onclick="event.stopPropagation()" title="${allSubsDone?'Mark complete':'Complete all subtasks first'}"/>
+      <div class="cal-task-main" style="padding-right:6px">
+        <input type="checkbox" class="cal-cb" onchange="calToggleTask('${p.id}','${ph}','${t.id}')" onclick="event.stopPropagation()"/>
         <span class="cal-proj-dot" style="background:${p.color}"></span>
-        <span class="cal-task-text" onclick="navToTask('${p.id}','${ph}','${t.id}')">${esc(t.text)}</span>
+        <span class="cal-task-text" onclick="navToTask('${p.id}','${ph}','${t.id}')" style="cursor:pointer;flex:1;text-decoration:none" title="Go to task in project">${esc(t.text)}</span>
         ${recurLabel}
         <span class="cal-proj-label">${esc(p.name)}</span>
-        <span class="due-badge due-${t.due||'none'}" onclick="cycleDueById('${p.id}','${ph}','${t.id}')" style="flex-shrink:0">${DUE_LABELS[t.due||'none']}</span>
+        <span class="due-badge due-${t.due||'none'}" onclick="cycleDueById('${p.id}','${ph}','${t.id}')" style="flex-shrink:0;cursor:pointer">${DUE_LABELS[t.due||'none']}</span>
+        <button onclick="calDoneAll('${p.id}','${ph}','${t.id}')" title="Mark all done & archive" style="background:#16a34a;border:none;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;cursor:pointer;flex-shrink:0;font-family:var(--font);white-space:nowrap">✓ Done</button>
+        <button onclick="calDeleteTask('${p.id}','${ph}','${t.id}')" title="Delete task" style="background:none;border:1px solid var(--border-md);color:var(--text3);font-size:12px;padding:2px 5px;border-radius:4px;cursor:pointer;flex-shrink:0;line-height:1">×</button>
       </div>
       ${subs.length?`<div class="cal-subtasks">${subs.map(s=>`<div class="cal-sub-row"><input type="checkbox" class="cal-sub-cb" ${s.done?'checked':''} onchange="calToggleSub('${p.id}','${ph}','${t.id}','${s.id}')"/><span class="${s.done?'done':''}" style="font-size:12px;color:var(--text2);flex:1">${esc(s.text)}</span></div>`).join('')}<div class="cal-add-sub"><input class="cal-sub-inp" id="calsub_${t.id}_${ctx}" placeholder="+ subtask..." onkeydown="if(event.key==='Enter')calAddSub('${p.id}','${ph}','${t.id}','${ctx}')"/></div></div>`:`<div class="cal-add-sub" style="padding-left:46px"><input class="cal-sub-inp" id="calsub_${t.id}_${ctx}" placeholder="+ subtask..." onkeydown="if(event.key==='Enter')calAddSub('${p.id}','${ph}','${t.id}','${ctx}')"/></div>`}
     </div>`;
@@ -2216,6 +2279,7 @@ function renderCalendar(){
 
   // RIGHT: quick-add
   const projOptions=state.projects.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
+  // Quick-add: date drives the bucket automatically — no separate due selector
   const qaEl=document.getElementById('calQaSticky');
   if(qaEl)qaEl.innerHTML=`
     <div style="font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">＋ Quick Add Task</div>
@@ -2224,19 +2288,22 @@ function renderCalendar(){
       <select id="calQaProject" onchange="calQaUpdatePhases()" style="font-size:12px;padding:6px 8px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg);color:var(--text);font-family:var(--font);outline:none">${projOptions}</select>
       <select id="calQaPhase" style="font-size:12px;padding:6px 8px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg);color:var(--text);font-family:var(--font);outline:none"></select>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:8px">
-      <select id="calQaDue" style="font-size:11px;padding:5px 6px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg);color:var(--text);font-family:var(--font);outline:none">
-        <option value="today">Today</option><option value="week">This week</option>
-        <option value="someday">Someday</option><option value="none">Unscheduled</option>
-      </select>
-      <input type="date" id="calQaDate" value="${now.toISOString().slice(0,10)}" style="font-size:11px;padding:4px 5px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg);color:var(--text);font-family:var(--font);outline:none"/>
-      <select id="calQaRecur" style="font-size:11px;padding:5px 6px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg);color:var(--text);font-family:var(--font);outline:none">
-        <option value="">No repeat</option><option value="daily">Every day</option>
-        <option value="weekly">Every week</option><option value="monday">Every Monday</option>
-        <option value="tuesday">Every Tuesday</option><option value="wednesday">Every Wednesday</option>
-        <option value="thursday">Every Thursday</option><option value="friday">Every Friday</option>
-        <option value="monthly">Every month</option>
-      </select>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <label style="font-size:10px;color:var(--text3);font-weight:600">Date <span style="font-weight:400;opacity:.7">(sets bucket auto)</span></label>
+        <input type="date" id="calQaDate" value="${now.toISOString().slice(0,10)}" onchange="calQaAutoDate()" style="font-size:12px;padding:6px 7px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg);color:var(--text);font-family:var(--font);outline:none;width:100%"/>
+        <div id="calQaDateLabel" style="font-size:10px;color:var(--accent);font-weight:600;padding:1px 2px">📅 Today</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <label style="font-size:10px;color:var(--text3);font-weight:600">Repeat</label>
+        <select id="calQaRecur" style="font-size:12px;padding:6px 7px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg);color:var(--text);font-family:var(--font);outline:none">
+          <option value="">No repeat</option><option value="daily">Every day</option>
+          <option value="weekly">Every week</option><option value="monday">Every Monday</option>
+          <option value="tuesday">Every Tuesday</option><option value="wednesday">Every Wednesday</option>
+          <option value="thursday">Every Thursday</option><option value="friday">Every Friday</option>
+          <option value="monthly">Every month</option>
+        </select>
+      </div>
     </div>
     <button class="btn dark" onclick="calQuickAdd()" style="width:100%;justify-content:center;font-size:13px;padding:9px">Add Task</button>`;
   setTimeout(calQaUpdatePhases,50);
@@ -2250,27 +2317,88 @@ function calQaUpdatePhases(){
   sel.innerHTML=p.phases.map(ph=>`<option value="${esc(ph)}">${esc(ph)}</option>`).join('');
 }
 
+// Auto-label the date picker with bucket name
+function calQaAutoDate(){
+  const dateEl=document.getElementById('calQaDate');
+  const label=document.getElementById('calQaDateLabel');
+  if(!dateEl||!label)return;
+  const val=dateEl.value;
+  if(!val){label.textContent='';return;}
+  const picked=new Date(val+'T00:00:00');
+  const now=new Date();
+  const todayStr=now.toDateString();
+  const diffDays=Math.round((picked-new Date(now.toDateString()))/(1000*60*60*24));
+  let bucket,lbl;
+  if(diffDays<0){bucket='none';lbl='⬅ Past date';}
+  else if(diffDays===0){bucket='today';lbl='📅 Today';}
+  else if(diffDays<=6){bucket='week';lbl='📆 This Week';}
+  else if(diffDays<=30){bucket='someday';lbl='🗓 Upcoming';}
+  else{bucket='none';lbl='📌 Future';}
+  label.textContent=lbl;
+  label.style.color=bucket==='today'?'#dc2626':bucket==='week'?'#b45309':'var(--text3)';
+}
+
 function calQuickAdd(){
   const text=document.getElementById('calQaText')?.value.trim();if(!text)return;
   const pid=document.getElementById('calQaProject')?.value;
   const ph=document.getElementById('calQaPhase')?.value;
-  const due=document.getElementById('calQaDue')?.value||'today';
-  const dateVal=document.getElementById('calQaDate')?.value||'';
+  const dateVal=document.getElementById('calQaDate')?.value||new Date().toISOString().slice(0,10);
   const recur=document.getElementById('calQaRecur')?.value||'';
   const p=state.projects.find(pr=>pr.id===pid);if(!p)return;
+
+  // Derive bucket from date automatically
+  const picked=new Date(dateVal+'T00:00:00');
+  const now=new Date();
+  const diffDays=Math.round((picked-new Date(now.toDateString()))/(1000*60*60*24));
+  let due;
+  if(diffDays<=0)due='today';
+  else if(diffDays<=6)due='week';
+  else if(diffDays<=30)due='someday';
+  else due='none';
+
   if(!p.tasks[ph])p.tasks[ph]=[];
   p.tasks[ph].push({id:'t'+Date.now(),text,type:'task',done:false,highlighted:false,
-    subtasks:[],note:'',files:[],badge:'none',due,scheduledDate:dateVal,subsCollapsed:false,doneAt:0,recur:recur||null});
+    subtasks:[],note:'',files:[],badge:'none',due,scheduledDate:dateVal,
+    subsCollapsed:false,doneAt:0,recur:recur||null});
   document.getElementById('calQaText').value='';
+  // Reset date to today and re-label
+  const newDate=new Date().toISOString().slice(0,10);
+  document.getElementById('calQaDate').value=newDate;
+  calQaAutoDate();
   scheduleSave();renderCalendar();renderWeekStrip();
-  showToast('Added to '+p.name+' → '+ph);
+  showToast('Added to '+p.name+' → '+ph+' ('+due+')');
 }
 
-function calToggleTask(pid,ph,tid){
+// Navigate to task in project/phase view
+function navToTask(pid,ph,tid){
+  const p=state.projects.find(pr=>pr.id===pid);if(!p)return;
+  // Switch to tasks tab and select project/phase
+  selProj(pid);
+  const phIdx=p.phases.indexOf(ph);
+  if(phIdx>=0){
+    state.activePhase=phIdx;
+    if(p.activePhase!==undefined)p.activePhase=phIdx;
+  }
+  switchMainTab('tasks');
+  setTimeout(()=>{
+    renderPhases(p);
+    renderTasks(p);
+    setTimeout(()=>{
+      const el=document.getElementById('tc_'+tid);
+      if(el){
+        el.scrollIntoView({behavior:'smooth',block:'center'});
+        el.style.outline='2px solid var(--accent)';
+        setTimeout(()=>{if(el)el.style.outline='';},1500);
+      }
+    },80);
+  },80);
+}
+
+// Mark all subtasks done + archive the task
+function calDoneAll(pid,ph,tid){
   const p=state.projects.find(pr=>pr.id===pid);if(!p)return;
   const t=(p.tasks[ph]||[]).find(t=>t.id===tid);if(!t)return;
-  const subs=t.subtasks||[];
-  if(!subs.every(s=>s.done)&&subs.length){showToast('Complete all subtasks first');return;}
+  (t.subtasks||[]).forEach(s=>s.done=true);
   t.done=true;t.doneAt=Date.now();
   if(!p.archive)p.archive=[];
   p.archive.push({...t,archivedAt:Date.now(),archivedFrom:ph});
@@ -2282,7 +2410,23 @@ function calToggleTask(pid,ph,tid){
     p.tasks[ph].push(next);
   }
   scheduleSave();renderCalendar();renderWeekStrip();
-  if(mainTab==='tasks'&&state.activeProject===pid)renderTasks(p);
+  showToast('Task completed & archived');
+}
+
+// Delete task from calendar without archiving
+function calDeleteTask(pid,ph,tid){
+  const p=state.projects.find(pr=>pr.id===pid);if(!p)return;
+  p.tasks[ph]=(p.tasks[ph]||[]).filter(x=>x.id!==tid);
+  scheduleSave();renderCalendar();renderWeekStrip();
+  showToast('Task deleted');
+}
+
+function calToggleTask(pid,ph,tid){
+  const p=state.projects.find(pr=>pr.id===pid);if(!p)return;
+  const t=(p.tasks[ph]||[]).find(t=>t.id===tid);if(!t)return;
+  const subs=t.subtasks||[];
+  if(subs.length&&!subs.every(s=>s.done)){showToast('Complete all subtasks first, or use ✓ Done All');return;}
+  calDoneAll(pid,ph,tid);
 }
 
 // ARCHIVE
