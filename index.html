@@ -8,11 +8,17 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#f5f4f0;--surface:#fff;--surface2:#efede8;--surface3:#e8e5df;
-  --border:rgba(0,0,0,0.08);--border-md:rgba(0,0,0,0.14);--border-strong:rgba(0,0,0,0.24);
-  --text:#1c1b18;--text2:#6b6860;--text3:#a8a59f;--accent:#1c1b18;
+  --bg:#f0efe9;--surface:#fff;--surface2:#eae8e1;--surface3:#e0ddd5;
+  --border:rgba(0,0,0,0.10);--border-md:rgba(0,0,0,0.18);--border-strong:rgba(0,0,0,0.30);
+  --text:#111008;--text2:#4a4840;--text3:#8a8780;--accent:#1c1b18;
   --radius:10px;--radius-sm:6px;--font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
-  --hl-bg:#fffae0;--hl-border:#e8d84a;--q-bg:#f0f4ff;--q-border:#b0bfff;--q-text:#3a4bbf;
+  --hl-bg:#fffae0;--hl-border:#e8d84a;--q-bg:#eef2ff;--q-border:#818cf8;--q-text:#3730a3;
+}
+body.dark{
+  --bg:#0f0f0d;--surface:#1a1a17;--surface2:#252520;--surface3:#2e2e28;
+  --border:rgba(255,255,255,0.08);--border-md:rgba(255,255,255,0.14);--border-strong:rgba(255,255,255,0.26);
+  --text:#f0ede6;--text2:#b8b5ae;--text3:#6b6860;--accent:#f0ede6;
+  --hl-bg:#2a2500;--hl-border:#a8940a;--q-bg:#1a1f3a;--q-border:#4f5daa;--q-text:#818cf8;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden}
@@ -39,9 +45,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 .layout{display:flex;flex:1;overflow:hidden}
 /* SIDEBAR */
 .sidebar{width:210px;min-width:210px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
-.sb-head{padding:14px 14px 6px;font-size:10px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;color:var(--text3)}
+.sb-head{padding:14px 14px 6px;font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--text2)}
 .proj-list{flex:1;overflow-y:auto;padding:2px 8px}
-.proj-item{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:var(--radius-sm);cursor:pointer;font-size:13px;color:var(--text2);margin-bottom:1px;transition:background .1s;user-select:none}
+.proj-item{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:var(--radius-sm);cursor:pointer;font-size:14px;color:var(--text2);margin-bottom:2px;transition:background .1s;user-select:none}
 .proj-item:hover{background:var(--surface2)}
 .proj-item.active{background:var(--surface2);color:var(--text);font-weight:500}
 .proj-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
@@ -56,14 +62,14 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 /* MAIN */
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
 .proj-header{display:flex;align-items:center;gap:10px;padding:11px 22px 9px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
-.proj-title{font-size:17px;font-weight:500;font-family:var(--font);color:var(--text);border:none;background:none;outline:none;flex:1}
+.proj-title{font-size:20px;font-weight:600;font-family:var(--font);color:var(--text);border:none;background:none;outline:none;flex:1}
 .proj-title::placeholder{color:var(--text3)}
 /* PHASE BAR */
-.phase-bar{display:flex;gap:5px;padding:9px 22px;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto;flex-shrink:0;align-items:center}
-.phase-chip{padding:4px 13px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid transparent;white-space:nowrap;transition:all .1s;font-family:var(--font);user-select:none;color:#fff;font-weight:500;opacity:.72}
+.phase-bar{display:flex;gap:6px;padding:10px 22px;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto;flex-shrink:0;align-items:center}
+.phase-chip{padding:5px 15px;border-radius:20px;font-size:13px;cursor:pointer;border:1px solid transparent;white-space:nowrap;transition:all .1s;font-family:var(--font);user-select:none;color:#fff;font-weight:600;opacity:.75}
 .phase-chip:hover{opacity:1}
-.phase-chip.active{opacity:1;box-shadow:0 0 0 2px rgba(0,0,0,0.18)}
-.phase-chip.done{text-decoration:line-through;opacity:.32}
+.phase-chip.active{opacity:1;box-shadow:0 0 0 2px rgba(0,0,0,0.22)}
+.phase-chip.done{text-decoration:line-through;opacity:.35}
 .phase-chip.highlights-chip{background:linear-gradient(135deg,#c9a800,#e8d84a)!important;color:#5a4500!important;opacity:1}
 .new-phase-inp{font-size:12px;padding:4px 12px;border-radius:20px;border:1px dashed var(--border-strong);background:none;color:var(--text3);font-family:var(--font);outline:none;width:80px;transition:all .1s}
 .new-phase-inp:focus{width:120px;border-color:var(--text3);color:var(--text2)}
@@ -72,9 +78,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 /* TASKS PANEL */
 .tasks-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;padding:14px 20px 14px;gap:10px}
 .panel-row{display:flex;align-items:center;gap:8px;flex-shrink:0}
-.panel-label{font-size:10px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;color:var(--text3);flex:1}
+.panel-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--text2);flex:1}
 .add-row{display:flex;gap:8px;flex-shrink:0}
-.add-inp{flex:1;font-size:14px;padding:9px 14px;border-radius:var(--radius);border:1px solid var(--border-md);background:var(--surface);color:var(--text);font-family:var(--font);outline:none;transition:border-color .12s}
+.add-inp{flex:1;font-size:15px;padding:10px 14px;border-radius:var(--radius);border:1px solid var(--border-md);background:var(--surface);color:var(--text);font-family:var(--font);outline:none;transition:border-color .12s}
 .add-inp:focus{border-color:var(--border-strong)}
 .add-inp::placeholder{color:var(--text3)}
 .type-toggle{display:flex;border:1px solid var(--border-md);border-radius:var(--radius-sm);overflow:hidden;flex-shrink:0}
@@ -111,10 +117,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 .task-cb{cursor:pointer;flex-shrink:0;accent-color:var(--accent);width:15px;height:15px}
 .q-badge{font-size:10px;font-weight:500;background:var(--q-border);color:var(--q-text);border-radius:4px;padding:1px 5px;flex-shrink:0}
 .task-text-wrap{flex:1;min-width:0}
-.task-text{font-size:13.5px;color:var(--text);line-height:1.4;word-break:break-word}
+.task-text{font-size:14.5px;color:var(--text);line-height:1.4;word-break:break-word}
 .task-text.done{text-decoration:line-through;color:var(--text3)}
 .task-text.question-text{color:var(--q-text)}
-.task-edit-inp{font-size:13.5px;font-family:var(--font);color:var(--text);border:none;background:none;outline:none;width:100%;line-height:1.4}
+.task-edit-inp{font-size:14.5px;font-family:var(--font);color:var(--text);border:none;background:none;outline:none;width:100%;line-height:1.4}
 .task-meta{font-size:11px;color:var(--text3);margin-top:2px;display:flex;gap:8px;align-items:center}
 .file-chip{font-size:10px;background:var(--surface2);border:1px solid var(--border-md);border-radius:4px;padding:1px 6px;color:var(--text2);display:inline-flex;align-items:center;gap:3px;text-decoration:none;cursor:pointer;word-break:break-all;white-space:normal}
 .file-chip:hover{background:var(--surface3);border-color:var(--border-strong)}
@@ -349,20 +355,20 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 .cal-sub-inp{width:100%;font-size:11px;padding:3px 6px;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:var(--font);outline:none}
 .cal-sub-inp:focus{border-color:var(--border-md)}
 .cal-section{display:flex;flex-direction:column;gap:4px}
-.cal-section-head{font-size:10px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;color:var(--text3);margin-bottom:4px}
+.cal-section-head{font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:5px}
 .cal-section-body{display:flex;flex-direction:column}
 /* SUBTASK INDENT FIX — handled in main CSS above */
 /* MEETINGS */
 .mtg-layout{display:flex;flex:1;overflow:hidden}
 .mtg-list{width:220px;min-width:220px;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;background:var(--surface)}
 .mtg-list-head{padding:12px 12px 8px;display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--border);flex-shrink:0}
-.mtg-list-sect{padding:4px 8px 2px;font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)}
+.mtg-list-sect{padding:4px 8px 2px;font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--text2)}
 .mtg-list-items{flex:1;overflow-y:auto;padding:2px 8px 8px}
-.mtg-item{display:flex;align-items:center;gap:8px;padding:8px 9px;border-radius:var(--radius-sm);cursor:pointer;margin-bottom:1px;border-left:3px solid transparent;transition:background .1s}
+.mtg-item{display:flex;align-items:center;gap:8px;padding:9px 9px;border-radius:var(--radius-sm);cursor:pointer;margin-bottom:2px;border-left:3px solid transparent;transition:background .1s}
 .mtg-item:hover{background:var(--surface2)}
 .mtg-item.active{border-left-color:var(--accent);background:var(--surface2)}
-.mtg-item-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
-.mtg-item-name{flex:1;font-size:13px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mtg-item-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.mtg-item-name{flex:1;font-size:14px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mtg-item-date{font-size:10px;color:var(--text3)}
 .mtg-detail{flex:1;display:flex;flex-direction:column;overflow:hidden}
 .mtg-detail-head{padding:10px 18px 9px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;display:flex;gap:8px;align-items:center}
@@ -412,6 +418,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
   <button class="btn dark" onclick="connectSheet()">Connect</button>
   <button class="btn" onclick="loadFromSheets()">↺ Load</button>
   <span class="badge none" id="syncBadge">not connected</span>
+  <button class="btn" onclick="toggleDark()" id="darkBtn" title="Toggle dark mode" style="padding:5px 8px;font-size:14px">🌙</button>
   <button class="btn" onclick="showSyncMenu(event)" title="Sync tools" style="padding:5px 8px;font-size:13px">⚙</button>
 </div>
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
@@ -467,34 +474,29 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
         </div>
         <div class="task-list" id="taskList"></div>
       </div>
-      <div class="notes-panel" id="notesPanel">
-        <div class="np-head">
-          <span class="panel-label" style="flex:1">Phase notes</span>
-          <div class="np-tabs">
-            <span class="np-tab active" id="tabNotes" onclick="switchTab('notes')">Notes</span>
-            <span class="np-tab" id="tabQuestions" onclick="switchTab('questions')">Questions</span>
-          </div>
-        </div>
-        <div class="np-body">
-          <div class="quick-area">
-            <textarea class="q-textarea" id="noteInput" placeholder="Quick note for this phase..."></textarea>
-            <div class="row">
-              <button class="btn dark sm" onclick="saveNote('note')">Save note</button>
-              <button class="btn sm" onclick="saveNote('question')">Save as question</button>
-              <button class="btn sm" onclick="document.getElementById('noteInput').value=''">Clear</button>
-            </div>
-          </div>
-          <div class="items-list" id="notesList"></div>
-        </div>
-      </div>
     </div>
     <!-- CALENDAR PANEL — inside .main so it fills correctly -->
     <div id="calendarPanel" style="display:none;flex:1;overflow:hidden;flex-direction:column">
-      <div id="weekStrip" style="padding:12px 22px 10px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0">
-        <div style="font-size:10px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">2-Week Overview</div>
+      <!-- WEEK SQUARES STRIP -->
+      <div id="weekStrip" style="padding:10px 20px 8px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0">
         <div class="week-grid" id="weekGrid"></div>
       </div>
-      <div class="cal-view" id="calView" style="flex:1;overflow-y:auto;padding:14px 22px;display:grid;grid-template-columns:1fr 1fr;gap:14px;align-content:start"></div>
+      <!-- TWO COLUMN: left=today+thisweek, right=quickadd(sticky)+someday+unscheduled -->
+      <div style="flex:1;overflow:hidden;display:flex;gap:0">
+        <!-- LEFT COLUMN: scrollable -->
+        <div id="calLeft" style="flex:1;overflow-y:auto;padding:14px 10px 14px 20px;display:flex;flex-direction:column;gap:14px;border-right:1px solid var(--border)">
+          <div id="calTodaySection"></div>
+          <div id="calWeekSection"></div>
+          <div id="calSomedaySection"></div>
+          <div id="calUnschedSection"></div>
+        </div>
+        <!-- RIGHT COLUMN: quick add sticky top, then overflow -->
+        <div id="calRight" style="width:320px;min-width:280px;display:flex;flex-direction:column;overflow:hidden">
+          <div id="calQaSticky" style="padding:14px 20px 10px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--surface)"></div>
+          <div style="flex:1;overflow-y:auto;padding:10px 20px 14px;display:flex;flex-direction:column;gap:10px" id="calRightScroll"></div>
+        </div>
+      </div>
+      <div class="cal-view" id="calView" style="display:none"></div>
     </div>
     <!-- MEETINGS PANEL -->
     <div id="meetingsPanel" style="display:none;flex:1;overflow:hidden;flex-direction:column">
@@ -1039,11 +1041,11 @@ function handleCardClick(e,id){
 
 function renderNotes(p){
   if(!p)return;
+  const notesEl=document.getElementById('notesList');if(!notesEl)return;
   const ph=getPhaseKey();
   const all=p.notes[ph]||[];
   const items=activeTab==='notes'?all.filter(n=>n.type==='note'||!n.type):all.filter(n=>n.type==='question');
-  const el=document.getElementById('notesList');
-  el.innerHTML=items.length?items.map((n)=>{
+  notesEl.innerHTML=items.length?items.map((n)=>{
     const idx=all.indexOf(n);
     return`<div class="note-card type-${n.type||'note'}" onclick="editNote(${idx})">
       <div class="note-type-label">${n.type==='question'?'Question':'Note'}</div>
@@ -1830,15 +1832,16 @@ function renderMeetingRoom(mt){
   if(!data.tasks)data.tasks=[];
   if(!data.attendees)data.attendees=[];
 
-  // Attendee buttons
+  // Attendee toggle buttons
   const attBtns=MTG_ATTENDEES.map(a=>{
     const sel=data.attendees.includes(a.name);
-    return`<button onclick="toggleRoomAttendee('${mt.id}','${a.name}')" title="${a.email}" style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1.5px solid ${sel?mt.color:'var(--border-md)'};background:${sel?mt.color:'var(--surface)'};color:${sel?'#fff':'var(--text2)'};font-family:var(--font);transition:all .12s">${a.name}</button>`;
+    return`<button onclick="toggleRoomAttendee('${mt.id}','${a.name}')" title="${a.email}" style="padding:4px 11px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1.5px solid ${sel?mt.color:'var(--border-md)'};background:${sel?mt.color:'var(--surface)'};color:${sel?'#fff':'var(--text2)'};font-family:var(--font);transition:all .12s">${a.name}</button>`;
   }).join('');
 
-  // History rows — all entries, newest first
-  const histRows=data.history.slice().reverse().map((e,ri)=>{
-    const realIdx=data.history.length-1-ri;
+  // History rows — show 10 most recent, oldest at top, newest at bottom (like a chat)
+  const recentHistory=data.history.slice(-10);
+  const histRows=recentHistory.map((e,ri)=>{
+    const realIdx=data.history.length-recentHistory.length+ri;
     return`<div class="act-row">
       <span class="act-date">${e.date||''}</span>
       <span class="act-text">${esc(e.text)}</span>
@@ -1846,91 +1849,104 @@ function renderMeetingRoom(mt){
     </div>`;
   }).join('');
 
-  // Action task rows
+  // Owner options filtered to selected attendees (plus option to show all)
+  const selectedAtts=data.attendees.length?data.attendees:MTG_OWNERS;
+  function getRoomOwnerOptions(selected){
+    const owners=[...new Set([...selectedAtts,...(state.extraOwners||[])])];
+    return`<option value="">— Owner —</option>`+
+      owners.map(o=>`<option value="${o}" ${selected===o?'selected':''}>${o}</option>`).join('')+
+      `<option value="__add__">+ Add person...</option>`;
+  }
+
+  // Task rows
   const taskRows=data.tasks.map((t,i)=>`
-    <div class="mtg-task-row" style="${t.done?'opacity:.5':''}">
+    <div class="mtg-task-row" style="${t.done?'opacity:.55':''}">
       <input type="checkbox" ${t.done?'checked':''} onchange="toggleRoomTask('${mt.id}',${i})" style="cursor:pointer;flex-shrink:0"/>
-      <input value="${esc(t.text)}" placeholder="Action item..." style="flex:1;font-size:12.5px;border:none;background:none;font-family:var(--font);color:var(--text);outline:none;${t.done?'text-decoration:line-through':''}" oninput="updateRoomTask('${mt.id}',${i},'text',this.value)"/>
-      <select onchange="updateRoomTask('${mt.id}',${i},'owner',this.value)" style="font-size:11px;border:1px solid var(--border-md);border-radius:4px;background:var(--bg);color:var(--text2);font-family:var(--font);padding:2px 4px;max-width:110px">
-        ${getMtgOwnerOptions(t.owner)}
+      <input value="${esc(t.text)}" placeholder="Action item..." style="flex:1;font-size:12.5px;border:none;background:none;font-family:var(--font);color:var(--text);outline:none;min-width:0;${t.done?'text-decoration:line-through':''}" oninput="updateRoomTask('${mt.id}',${i},'text',this.value)"/>
+      <select onchange="updateRoomTask('${mt.id}',${i},'owner',this.value)" style="font-size:11px;border:1px solid var(--border-md);border-radius:4px;background:var(--bg);color:var(--text2);font-family:var(--font);padding:2px 6px;flex-shrink:0">
+        ${getRoomOwnerOptions(t.owner)}
       </select>
-      <select onchange="assignRoomTask('${mt.id}',${i},this.value)" style="font-size:11px;border:1px solid var(--border-md);border-radius:4px;background:var(--bg);color:var(--text2);font-family:var(--font);padding:2px 4px;max-width:110px">
-        <option value="">→ Project</option>
-        ${state.projects.map(p=>`<option value="${p.id}" ${t.projId===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}
-      </select>
-      <button onclick="removeRoomTask('${mt.id}',${i})" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;padding:0 3px">×</button>
+      <button onclick="removeRoomTask('${mt.id}',${i})" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;padding:0 3px;flex-shrink:0">×</button>
     </div>`).join('');
 
   const selNames=(data.attendees||[]).join(', ')||'none selected';
 
-  return`<div class="mtg-detail">
-    <div class="mtg-detail-head" style="border-bottom:3px solid ${mt.color}">
+  return`<div class="mtg-detail" style="display:flex;flex-direction:column;overflow:hidden">
+    <!-- HEADER -->
+    <div class="mtg-detail-head" style="border-bottom:3px solid ${mt.color};flex-shrink:0">
       <span style="font-size:20px">${mt.icon}</span>
-      <input value="${esc(mt.label)}" style="font-size:16px;font-weight:700;border:none;background:none;outline:none;flex:1;font-family:var(--font);color:${mt.color}" oninput="updateMeetingTypeName('${mt.id}',this.value)"/>
-      <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">
+      <input value="${esc(mt.label)}" style="font-size:16px;font-weight:700;border:none;background:none;outline:none;font-family:var(--font);color:${mt.color};min-width:80px;max-width:200px" oninput="updateMeetingTypeName('${mt.id}',this.value)"/>
+      <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;flex:1">
+        <span style="font-size:11px;color:var(--text3);margin-right:2px">Attendees:</span>
         ${attBtns}
-        <button class="btn sm" onclick="deleteMeetingType('${mt.id}')" style="color:#b33;margin-left:4px">🗑</button>
       </div>
+      <button class="btn sm" onclick="deleteMeetingType('${mt.id}')" style="color:#b33;flex-shrink:0">🗑</button>
     </div>
-    <div class="mtg-detail-body">
 
-      <!-- ACTIVITY HISTORY -->
-      <div class="act-block">
-        <div class="act-block-head" style="background:${mt.color}">
-          <span style="font-size:15px">${mt.icon}</span>
-          <span class="act-block-title">Activity History</span>
-          <span class="act-block-count">${data.history.length} entr${data.history.length===1?'y':'ies'}</span>
-        </div>
-        <div class="act-history" style="max-height:260px;overflow-y:auto">
-          ${histRows||`<div style="padding:12px 14px;font-size:12px;color:var(--text3);font-style:italic">No entries yet — add the first note below</div>`}
-        </div>
-        <div class="act-add">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
-            <span style="width:8px;height:8px;border-radius:50%;background:${mt.color};display:inline-block;flex-shrink:0"></span>
-            <span class="act-add-head">— ADD NEW NOTE</span>
-          </div>
-          <textarea class="act-add-ta" id="roomEntry_${mt.id}" placeholder="What happened? Updates? Next steps?"></textarea>
-          <div class="act-add-row" style="margin-top:6px">
-            <input type="date" class="act-add-date" id="roomEntryDate_${mt.id}" value="${new Date().toISOString().slice(0,10)}"/>
-            <div style="flex:1"></div>
-            <button class="act-add-btn" style="background:${mt.color}" onclick="addRoomEntry('${mt.id}')">Save Note</button>
-          </div>
-        </div>
-      </div>
+    <!-- TWO COLUMN BODY -->
+    <div style="flex:1;display:flex;overflow:hidden;gap:0">
 
-      <!-- ACTION ITEMS -->
-      <div class="act-block">
-        <div class="act-block-head" style="background:#1c1b18">
-          <span style="font-size:15px">✅</span>
-          <span class="act-block-title">Action Items</span>
-          <button onclick="addRoomTask('${mt.id}')" style="background:rgba(255,255,255,.15);border:none;border-radius:4px;color:#fff;font-size:11px;padding:3px 10px;cursor:pointer;font-family:var(--font)">+ Add</button>
+      <!-- LEFT: ACTIVITY HISTORY -->
+      <div style="width:48%;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden">
+        <div style="background:${mt.color};padding:8px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0">
+          <span style="font-size:14px">${mt.icon}</span>
+          <span style="font-size:11px;font-weight:700;color:#fff;letter-spacing:.06em;text-transform:uppercase;flex:1">Activity History</span>
+          <span style="font-size:10px;background:rgba(255,255,255,.2);color:#fff;border-radius:10px;padding:1px 8px">${data.history.length} entr${data.history.length===1?'y':'ies'}</span>
         </div>
-        <div style="padding:8px 10px;display:flex;flex-direction:column;gap:3px">
-          ${taskRows||'<div style="font-size:12px;color:var(--text3);padding:4px;font-style:italic">No action items yet</div>'}
-          <input id="roomNewTask_${mt.id}" placeholder="New action item — press Enter to add..." style="margin-top:4px;width:100%;font-size:12.5px;padding:6px 10px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg);color:var(--text);font-family:var(--font);outline:none" onkeydown="if(event.key==='Enter')addRoomTask('${mt.id}')"/>
+        <!-- History scroll -->
+        <div style="flex:1;overflow-y:auto;min-height:0">
+          ${histRows||`<div style="padding:14px;font-size:12px;color:var(--text3);font-style:italic">No entries yet</div>`}
         </div>
-      </div>
-
-      <!-- RECAP & EMAIL -->
-      <div class="act-block">
-        <div class="act-block-head" style="background:#1d4ed8">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="white" style="flex-shrink:0"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
-          <span class="act-block-title">Recap & Send Email</span>
-        </div>
-        <div style="padding:10px 14px;display:flex;flex-direction:column;gap:8px">
-          <textarea class="mtg-ta" style="min-height:70px" placeholder="Key decisions, summary for the email..." oninput="updateRoomRecap('${mt.id}',this.value)">${esc(data.recap||'')}</textarea>
-          <div style="font-size:11px;color:var(--text3)">Recipients: <strong>${selNames}</strong> — select above to change</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button onclick="sendRoomEmail('${mt.id}')" style="padding:7px 16px;border-radius:var(--radius-sm);font-size:12px;font-weight:600;border:none;background:#1d4ed8;color:#fff;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:6px">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
-              Send via Gmail
-            </button>
-            <button onclick="previewRoomRecap('${mt.id}')" class="btn">👁 Preview</button>
-            <button onclick="copyRoomRecap('${mt.id}')" class="btn">⎘ Copy</button>
+        <!-- Add note form pinned to bottom -->
+        <div style="border-top:2px solid ${mt.color}33;padding:12px 14px;background:var(--surface2);flex-shrink:0">
+          <div style="font-size:10px;font-weight:700;color:${mt.color};text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">— Add New Note</div>
+          <textarea id="roomEntry_${mt.id}" placeholder="What happened? Updates? Next steps?" style="width:100%;font-size:12.5px;padding:8px 10px;border-radius:var(--radius-sm);border:1.5px solid ${mt.color}44;background:#fff;color:var(--text);font-family:var(--font);outline:none;resize:none;min-height:80px;line-height:1.5" onfocus="this.style.borderColor='${mt.color}'" onblur="this.style.borderColor='${mt.color}44'"></textarea>
+          <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+            <input type="date" id="roomEntryDate_${mt.id}" value="${new Date().toISOString().slice(0,10)}" style="font-size:12px;padding:5px 7px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:#fff;color:var(--text);font-family:var(--font);outline:none"/>
+            <button onclick="addRoomEntry('${mt.id}')" style="flex:1;padding:7px 0;border-radius:var(--radius-sm);font-size:12px;font-weight:600;border:none;background:${mt.color};color:#fff;cursor:pointer;font-family:var(--font)">Save Note</button>
           </div>
         </div>
       </div>
 
+      <!-- RIGHT: TASKS + RECAP -->
+      <div style="flex:1;display:flex;flex-direction:column;overflow-y:auto;min-width:0">
+
+        <!-- ACTION ITEMS -->
+        <div style="border-bottom:1px solid var(--border);flex-shrink:0">
+          <div style="background:#1c1b18;padding:8px 14px;display:flex;align-items:center;gap:8px">
+            <span style="font-size:14px">✅</span>
+            <span style="font-size:11px;font-weight:700;color:#fff;letter-spacing:.06em;text-transform:uppercase;flex:1">Action Items</span>
+            <button onclick="addRoomTask('${mt.id}')" style="background:rgba(255,255,255,.15);border:none;border-radius:4px;color:#fff;font-size:11px;padding:3px 10px;cursor:pointer;font-family:var(--font)">+ Add</button>
+          </div>
+          <div style="padding:8px 12px;display:flex;flex-direction:column;gap:3px;max-height:220px;overflow-y:auto">
+            ${taskRows||'<div style="font-size:12px;color:var(--text3);padding:4px 0;font-style:italic">No action items yet</div>'}
+          </div>
+          <div style="padding:6px 12px 10px">
+            <input id="roomNewTask_${mt.id}" placeholder="New action item — press Enter to add..." style="width:100%;font-size:12.5px;padding:7px 10px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg);color:var(--text);font-family:var(--font);outline:none" onkeydown="if(event.key==='Enter')addRoomTask('${mt.id}')"/>
+          </div>
+        </div>
+
+        <!-- RECAP & EMAIL -->
+        <div style="flex-shrink:0;padding:12px 14px">
+          <div style="background:#1d4ed8;padding:8px 14px;border-radius:var(--radius-sm) var(--radius-sm) 0 0;display:flex;align-items:center;gap:8px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+            <span style="font-size:11px;font-weight:700;color:#fff;letter-spacing:.06em;text-transform:uppercase;flex:1">Recap & Email</span>
+          </div>
+          <div style="border:1px solid #1d4ed833;border-top:none;border-radius:0 0 var(--radius-sm) var(--radius-sm);padding:10px 12px;display:flex;flex-direction:column;gap:8px;background:var(--surface)">
+            <textarea class="mtg-ta" style="min-height:80px" placeholder="Key decisions, summary bullets for the email..." oninput="updateRoomRecap('${mt.id}',this.value)">${esc(data.recap||'')}</textarea>
+            <div style="font-size:11px;color:var(--text3)">To: <strong>${selNames}</strong></div>
+            <div style="display:flex;gap:7px;flex-wrap:wrap">
+              <button onclick="sendRoomEmail('${mt.id}')" style="padding:7px 16px;border-radius:var(--radius-sm);font-size:12px;font-weight:600;border:none;background:#1d4ed8;color:#fff;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:6px">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                Send via Gmail
+              </button>
+              <button onclick="previewRoomRecap('${mt.id}')" class="btn sm">👁 Preview</button>
+              <button onclick="copyRoomRecap('${mt.id}')" class="btn sm">⎘ Copy</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
     </div>
   </div>`;
 }
@@ -1978,6 +1994,11 @@ function addRoomEntry(mid){
   data.history.push({text,date:dateEl?dateEl.value:new Date().toISOString().slice(0,10)});
   if(ta)ta.value='';
   scheduleSave();renderMeetings();
+  // Scroll history to bottom after render
+  setTimeout(()=>{
+    const hEl=document.querySelector(`#meetingsView .act-history`);
+    if(hEl)hEl.scrollTop=hEl.scrollHeight;
+  },50);
 }
 function deleteRoomEntry(mid,idx){
   const data=state.meetingData[mid];if(!data||!data.history)return;
@@ -2097,40 +2118,40 @@ function sendMeetingRecapEmail(mid){sendRoomEmail(mid);}
 function toggleMtgHistory(){}
 
 
-// 2-WEEK STRIP
+// 2-WEEK STRIP + CALENDAR
+const calCollapsed={week:false,someday:false,unsched:true};
+
 function renderWeekStrip(){
   const el=document.getElementById('weekGrid');if(!el)return;
   const now=new Date();
   const todayStr=now.toDateString();
-  // Count tasks per day bucket across all projects
-  const todayCount=[];const weekCount=[];const somedayCount=[];
-  state.projects.forEach(p=>{p.phases.forEach(ph=>{(p.tasks[ph]||[]).filter(t=>!t.done).forEach(t=>{
-    if(t.due==='today')todayCount.push(t);
-    else if(t.due==='week')weekCount.push(t);
-    else if(t.due==='someday')somedayCount.push(t);
-  });});});
-  const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
   const dayOfWeek=now.getDay();
   const mondayOffset=dayOfWeek===0?-6:1-dayOfWeek;
+  const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const todayTasks=[],weekTasks=[];
+  state.projects.forEach(p=>{p.phases.forEach(ph=>{(p.tasks[ph]||[]).filter(t=>!t.done).forEach(t=>{
+    if(t.due==='today')todayTasks.push(t.text);
+    else if(t.due==='week')weekTasks.push(t.text);
+  });});});
   const cells=[];
   for(let w=0;w<2;w++){
     for(let d=0;d<7;d++){
       const offset=mondayOffset+(w*7)+d;
       const date=new Date(now);date.setDate(now.getDate()+offset);
       const isToday=date.toDateString()===todayStr;
-      const dayName=days[d];
-      const dayNum=date.getDate();
-      const month=date.toLocaleDateString('en-US',{month:'short'});
-      // Show task dot if today or this week has tasks
-      const hasTasks=(isToday&&todayCount.length>0)||(w===0&&weekCount.length>0&&!isToday);
-      cells.push(`<div class="week-day ${isToday?'today':''} ${hasTasks?'has-tasks':''}" title="${dayName} ${month} ${dayNum}${isToday?' (Today)':''}">
-        <span class="wd-name">${dayName}</span>
-        <span class="wd-num">${dayNum}</span>
-        <span class="wd-dot"></span>
+      const isThisWeek=w===0;
+      const taskList=isToday?todayTasks:(isThisWeek?weekTasks:[]);
+      const dots=taskList.slice(0,3).map(t=>`<div style="font-size:9px;color:${isToday?'#fff':'var(--text2)'};line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.85;max-width:100%">${esc(t.slice(0,16))}</div>`).join('');
+      const more=taskList.length>3?`<div style="font-size:9px;opacity:.55;color:${isToday?'#fff':'var(--text3)'}">+${taskList.length-3}</div>`:'';
+      cells.push(`<div style="display:flex;flex-direction:column;align-items:center;border-radius:6px;padding:5px 4px;background:${isToday?'var(--accent)':'var(--surface2)'};border:1px solid ${isToday?'transparent':'var(--border)'};min-height:52px">
+        <div style="font-size:9px;font-weight:600;color:${isToday?'rgba(255,255,255,.7)':'var(--text3)'};text-transform:uppercase;letter-spacing:.04em">${days[d]}</div>
+        <div style="font-size:13px;font-weight:700;color:${isToday?'#fff':'var(--text)'};line-height:1.3">${date.getDate()}</div>
+        ${dots}${more}
       </div>`);
     }
   }
   el.innerHTML=cells.join('');
+  el.style.cssText='display:grid;grid-template-columns:repeat(14,1fr);gap:3px';
 }
 
 // DUE DATES
@@ -2149,127 +2170,76 @@ function cycleDueById(pid,ph,tid){
   renderCalendar();scheduleSave();
 }
 
-// CALENDAR VIEW — see new renderCalendar below
-
-// Calendar collapsed sections state
-const calCollapsed={week:false,unsched:false,someday:false};
-
-// CALENDAR VIEW
 function renderCalendar(){
-  const el=document.getElementById('calView');
-  if(!el)return;
-
+  renderWeekStrip();
   const now=new Date();
-  const todayStr=now.toDateString();
-  const todayDow=now.getDay(); // 0=sun
-
-  const buckets={today:[],week:[],someday:[],none:[],notDone:[]};
-  state.projects.forEach(p=>{
-    p.phases.forEach(ph=>{
-      (p.tasks[ph]||[]).forEach(t=>{
-        if(t.done) return; // skip done tasks — they go to archive on check
-        const due=t.due||'none';
-        if(buckets[due])buckets[due].push({t,p,ph});
-        else buckets.none.push({t,p,ph});
-      });
-    });
-  });
-
-  // Not completed = tasks that were due "today" but today has passed (yesterday's leftovers)
-  // We detect this by checking if a task has due=today and was NOT completed
-  // They stay in Today section — user can reschedule or check off
+  const buckets={today:[],week:[],someday:[],none:[]};
+  state.projects.forEach(p=>{p.phases.forEach(ph=>{(p.tasks[ph]||[]).forEach(t=>{
+    if(t.done)return;
+    const due=t.due||'none';
+    if(buckets[due])buckets[due].push({t,p,ph});else buckets.none.push({t,p,ph});
+  });});});
 
   const renderCalTask=(t,p,ph,ctx)=>{
     const subs=t.subtasks||[];
-    const subsDone=subs.filter(s=>s.done).length;
-    const allSubsDone=subs.length===0||subsDone===subs.length;
-    const recurLabel=t.recur?`<span style="font-size:9px;background:#e8f4ff;color:#1a6b9b;border-radius:3px;padding:1px 5px;border:1px solid #b0d8f5;flex-shrink:0">↻ ${t.recur}</span>`:'';
+    const allSubsDone=subs.length===0||subs.every(s=>s.done);
+    const recurLabel=t.recur?`<span style="font-size:9px;background:var(--q-bg);color:var(--q-text);border-radius:3px;padding:1px 6px;border:1px solid var(--q-border);flex-shrink:0">↻ ${t.recur}</span>`:'';
     return`<div class="cal-task-card" id="cal_tc_${t.id}_${ctx}">
       <div class="cal-task-main">
-        <input type="checkbox" class="cal-cb" ${t.done?'checked':''} onchange="calToggleTask('${p.id}','${ph}','${t.id}')" onclick="event.stopPropagation()" title="${allSubsDone?'Mark complete':'Complete all subtasks first'}"/>
+        <input type="checkbox" class="cal-cb" onchange="calToggleTask('${p.id}','${ph}','${t.id}')" onclick="event.stopPropagation()" title="${allSubsDone?'Mark complete':'Complete all subtasks first'}"/>
         <span class="cal-proj-dot" style="background:${p.color}"></span>
-        <span class="cal-task-text ${t.done?'done':''}" onclick="navToTask('${p.id}','${ph}','${t.id}')" title="Go to task">${esc(t.text)}</span>
+        <span class="cal-task-text" onclick="navToTask('${p.id}','${ph}','${t.id}')">${esc(t.text)}</span>
         ${recurLabel}
         <span class="cal-proj-label">${esc(p.name)}</span>
         <span class="due-badge due-${t.due||'none'}" onclick="cycleDueById('${p.id}','${ph}','${t.id}')" style="flex-shrink:0">${DUE_LABELS[t.due||'none']}</span>
       </div>
-      ${subs.length?`<div class="cal-subtasks">
-        ${subs.map(s=>`<div class="cal-sub-row">
-          <input type="checkbox" class="cal-sub-cb" ${s.done?'checked':''} onchange="calToggleSub('${p.id}','${ph}','${t.id}','${s.id}')"/>
-          <span class="${s.done?'done':''}" style="font-size:11.5px;color:var(--text2);flex:1">${esc(s.text)}</span>
-        </div>`).join('')}
-        <div class="cal-add-sub"><input class="cal-sub-inp" id="calsub_${t.id}_${ctx}" placeholder="+ subtask..." onkeydown="if(event.key==='Enter')calAddSub('${p.id}','${ph}','${t.id}','${ctx}')"/></div>
-      </div>`:`<div class="cal-add-sub" style="padding-left:46px"><input class="cal-sub-inp" id="calsub_${t.id}_${ctx}" placeholder="+ subtask..." onkeydown="if(event.key==='Enter')calAddSub('${p.id}','${ph}','${t.id}','${ctx}')"/></div>`}
+      ${subs.length?`<div class="cal-subtasks">${subs.map(s=>`<div class="cal-sub-row"><input type="checkbox" class="cal-sub-cb" ${s.done?'checked':''} onchange="calToggleSub('${p.id}','${ph}','${t.id}','${s.id}')"/><span class="${s.done?'done':''}" style="font-size:12px;color:var(--text2);flex:1">${esc(s.text)}</span></div>`).join('')}<div class="cal-add-sub"><input class="cal-sub-inp" id="calsub_${t.id}_${ctx}" placeholder="+ subtask..." onkeydown="if(event.key==='Enter')calAddSub('${p.id}','${ph}','${t.id}','${ctx}')"/></div></div>`:`<div class="cal-add-sub" style="padding-left:46px"><input class="cal-sub-inp" id="calsub_${t.id}_${ctx}" placeholder="+ subtask..." onkeydown="if(event.key==='Enter')calAddSub('${p.id}','${ph}','${t.id}','${ctx}')"/></div>`}
     </div>`;
   };
 
-  const toggle=(key)=>`<button onclick="calCollapsed['${key}']=!calCollapsed['${key}'];renderCalendar()" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--text3);padding:0 4px">${calCollapsed[key]?'▶':'▼'}</button>`;
+  const sh=(label,color,border,key,count)=>
+    `<div style="font-size:13px;font-weight:800;color:${color};text-transform:uppercase;letter-spacing:.04em;padding-bottom:7px;border-bottom:3px solid ${border};display:flex;align-items:center;gap:7px;margin-bottom:6px">
+      ${key?`<span onclick="calCollapsed['${key}']=!calCollapsed['${key}'];renderCalendar()" style="cursor:pointer;user-select:none">${calCollapsed[key]?'▶':'▼'}</span>`:''}
+      ${label}${count!==undefined?`<span style="font-size:11px;font-weight:500;opacity:.6">${count}</span>`:''}
+    </div>`;
 
-  // Quick-add panel (top-right)
+  // LEFT column sections
+  const todaySec=document.getElementById('calTodaySection');
+  const weekSec=document.getElementById('calWeekSection');
+  const somedaySec=document.getElementById('calSomedaySection');
+  const unschedSec=document.getElementById('calUnschedSection');
+
+  if(todaySec)todaySec.innerHTML=`${sh('📅 Today — '+now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}),'#dc2626','#fca5a5',null)}${buckets.today.length?buckets.today.map(({t,p,ph})=>renderCalTask(t,p,ph,'today')).join(''):'<div style="font-size:13px;color:var(--text3);font-style:italic;padding:4px 0">No tasks due today</div>'}`;
+  if(weekSec)weekSec.innerHTML=`${sh('📆 This Week','#b45309','#fcd34d','week',buckets.week.length)}${calCollapsed.week?'':(buckets.week.length?buckets.week.map(({t,p,ph})=>renderCalTask(t,p,ph,'week')).join(''):'<div style="font-size:13px;color:var(--text3);font-style:italic;padding:4px 0">No tasks this week</div>')}`;
+  if(somedaySec)somedaySec.innerHTML=`${sh('🗓 Someday','#525252','#d4d4d4','someday',buckets.someday.length)}${calCollapsed.someday?'':(buckets.someday.length?buckets.someday.map(({t,p,ph})=>renderCalTask(t,p,ph,'someday')).join(''):'<div style="font-size:13px;color:var(--text3);font-style:italic;padding:4px 0">Nothing planned yet</div>')}`;
+  if(unschedSec)unschedSec.innerHTML=`${sh('Unscheduled','#71717a','#e4e4e7','unsched',buckets.none.length)}${calCollapsed.unsched?'':(buckets.none.length?buckets.none.map(({t,p,ph})=>renderCalTask(t,p,ph,'unsched')).join(''):'<div style="font-size:13px;color:var(--text3);font-style:italic;padding:4px 0">All scheduled ✓</div>')}`;
+
+  // RIGHT: quick-add
   const projOptions=state.projects.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
-  const quickAdd=`<div style="background:var(--surface);border:1px solid var(--border-md);border-radius:var(--radius);padding:12px 14px;display:flex;flex-direction:column;gap:8px">
-    <div style="font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.05em;text-transform:uppercase">＋ Quick Add Task</div>
-    <input id="calQaText" style="font-size:13px;padding:7px 10px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg);color:var(--text);font-family:var(--font);outline:none;width:100%" placeholder="Task name..." onkeydown="if(event.key==='Enter')calQuickAdd()"/>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+  const qaEl=document.getElementById('calQaSticky');
+  if(qaEl)qaEl.innerHTML=`
+    <div style="font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">＋ Quick Add Task</div>
+    <input id="calQaText" style="font-size:14px;padding:8px 11px;border-radius:var(--radius-sm);border:1.5px solid var(--border-md);background:var(--bg);color:var(--text);font-family:var(--font);outline:none;width:100%;margin-bottom:7px" placeholder="Task name..." onkeydown="if(event.key==='Enter')calQuickAdd()"/>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
       <select id="calQaProject" onchange="calQaUpdatePhases()" style="font-size:12px;padding:6px 8px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg);color:var(--text);font-family:var(--font);outline:none">${projOptions}</select>
       <select id="calQaPhase" style="font-size:12px;padding:6px 8px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg);color:var(--text);font-family:var(--font);outline:none"></select>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-      <select id="calQaDue" style="font-size:12px;padding:6px 8px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg);color:var(--text);font-family:var(--font);outline:none">
-        <option value="today">Today</option>
-        <option value="week">This week</option>
-        <option value="someday">Someday</option>
-        <option value="none">Unscheduled</option>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:8px">
+      <select id="calQaDue" style="font-size:11px;padding:5px 6px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg);color:var(--text);font-family:var(--font);outline:none">
+        <option value="today">Today</option><option value="week">This week</option>
+        <option value="someday">Someday</option><option value="none">Unscheduled</option>
       </select>
-      <select id="calQaRecur" style="font-size:12px;padding:6px 8px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg);color:var(--text);font-family:var(--font);outline:none">
-        <option value="">No repeat</option>
-        <option value="daily">Every day</option>
-        <option value="weekly">Every week</option>
-        <option value="monday">Every Monday</option>
-        <option value="tuesday">Every Tuesday</option>
-        <option value="wednesday">Every Wednesday</option>
-        <option value="thursday">Every Thursday</option>
-        <option value="friday">Every Friday</option>
-        <option value="biweekly">Every 2 weeks</option>
+      <input type="date" id="calQaDate" value="${now.toISOString().slice(0,10)}" style="font-size:11px;padding:4px 5px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg);color:var(--text);font-family:var(--font);outline:none"/>
+      <select id="calQaRecur" style="font-size:11px;padding:5px 6px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg);color:var(--text);font-family:var(--font);outline:none">
+        <option value="">No repeat</option><option value="daily">Every day</option>
+        <option value="weekly">Every week</option><option value="monday">Every Monday</option>
+        <option value="tuesday">Every Tuesday</option><option value="wednesday">Every Wednesday</option>
+        <option value="thursday">Every Thursday</option><option value="friday">Every Friday</option>
         <option value="monthly">Every month</option>
       </select>
     </div>
-    <button class="btn dark" onclick="calQuickAdd()" style="width:100%;justify-content:center">Add Task</button>
-  </div>`;
-
-  el.innerHTML=`
-    <div style="display:flex;flex-direction:column;gap:6px">
-      <div style="font-size:11px;font-weight:600;color:#9b2020;letter-spacing:.06em;text-transform:uppercase;padding-bottom:6px;border-bottom:2px solid #fca5a5">
-        📅 Today — ${now.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'})}
-      </div>
-      ${buckets.today.length?buckets.today.map(({t,p,ph})=>renderCalTask(t,p,ph,'today')).join('')
-        :`<div style="font-size:12px;color:var(--text3);padding:6px 0;font-style:italic">No tasks due today</div>`}
-    </div>
-    <div style="display:flex;flex-direction:column;gap:6px">
-      ${quickAdd}
-    </div>
-    <div style="display:flex;flex-direction:column;gap:6px;grid-column:1/-1">
-      <div style="font-size:11px;font-weight:600;color:#7a5c00;letter-spacing:.06em;text-transform:uppercase;padding-bottom:6px;border-bottom:2px solid #fde68a;display:flex;align-items:center;gap:4px">
-        ${toggle('week')}📆 This Week <span style="font-weight:400;opacity:.6;font-size:10px">${buckets.week.length}</span>
-      </div>
-      ${calCollapsed.week?'':(buckets.week.length?buckets.week.map(({t,p,ph})=>renderCalTask(t,p,ph,'week')).join(''):`<div style="font-size:12px;color:var(--text3);padding:6px 0;font-style:italic">No tasks this week</div>`)}
-    </div>
-    <div style="display:flex;flex-direction:column;gap:6px">
-      <div style="font-size:11px;font-weight:600;color:#6b6860;letter-spacing:.06em;text-transform:uppercase;padding-bottom:6px;border-bottom:2px solid var(--border-md)">
-        🗓 Someday
-      </div>
-      ${buckets.someday.length?buckets.someday.map(({t,p,ph})=>renderCalTask(t,p,ph,'someday')).join('')
-        :`<div style="font-size:12px;color:var(--text3);padding:6px 0;font-style:italic">Nothing planned yet</div>`}
-    </div>
-    <div style="display:flex;flex-direction:column;gap:6px">
-      <div style="font-size:11px;font-weight:600;color:#a8a59f;letter-spacing:.06em;text-transform:uppercase;padding-bottom:6px;border-bottom:2px solid var(--border);display:flex;align-items:center;gap:4px">
-        ${toggle('unsched')}Unscheduled <span style="font-weight:400;opacity:.6;font-size:10px">${buckets.none.length}</span>
-      </div>
-      ${calCollapsed.unsched?'':(buckets.none.length?buckets.none.map(({t,p,ph})=>renderCalTask(t,p,ph,'unsched')).join(''):`<div style="font-size:12px;color:var(--text3);padding:6px 0;font-style:italic">All tasks scheduled ✓</div>`)}
-    </div>`;
-
-  // Init phase dropdown
-  setTimeout(calQaUpdatePhases, 50);
+    <button class="btn dark" onclick="calQuickAdd()" style="width:100%;justify-content:center;font-size:13px;padding:9px">Add Task</button>`;
+  setTimeout(calQaUpdatePhases,50);
 }
 
 function calQaUpdatePhases(){
@@ -2277,7 +2247,7 @@ function calQaUpdatePhases(){
   const sel=document.getElementById('calQaPhase');if(!sel)return;
   const p=state.projects.find(pr=>pr.id===pid);
   if(!p){sel.innerHTML='';return;}
-  sel.innerHTML=p.phases.map((ph,i)=>`<option value="${esc(ph)}">${esc(ph)}</option>`).join('');
+  sel.innerHTML=p.phases.map(ph=>`<option value="${esc(ph)}">${esc(ph)}</option>`).join('');
 }
 
 function calQuickAdd(){
@@ -2285,39 +2255,22 @@ function calQuickAdd(){
   const pid=document.getElementById('calQaProject')?.value;
   const ph=document.getElementById('calQaPhase')?.value;
   const due=document.getElementById('calQaDue')?.value||'today';
+  const dateVal=document.getElementById('calQaDate')?.value||'';
   const recur=document.getElementById('calQaRecur')?.value||'';
   const p=state.projects.find(pr=>pr.id===pid);if(!p)return;
   if(!p.tasks[ph])p.tasks[ph]=[];
   p.tasks[ph].push({id:'t'+Date.now(),text,type:'task',done:false,highlighted:false,
-    subtasks:[],note:'',files:[],badge:'none',due,subsCollapsed:false,doneAt:0,
-    recur:recur||null});
+    subtasks:[],note:'',files:[],badge:'none',due,scheduledDate:dateVal,subsCollapsed:false,doneAt:0,recur:recur||null});
   document.getElementById('calQaText').value='';
-  scheduleSave();renderCalendar();
+  scheduleSave();renderCalendar();renderWeekStrip();
   showToast('Added to '+p.name+' → '+ph);
 }
 
-// Calendar task interactions
-function navToTask(pid,ph,tid){
-  const p=state.projects.find(pr=>pr.id===pid);if(!p)return;
-  const phIdx=p.phases.indexOf(ph);
-  selProj(pid);
-  if(phIdx>=0)selPhase(phIdx);
-  switchMainTab('tasks');
-  setTimeout(()=>{
-    expandedTasks[tid]=true;
-    renderTasks(getProj());
-    setTimeout(()=>{
-      const el=document.getElementById('tc_'+tid);
-      if(el)el.scrollIntoView({behavior:'smooth',block:'center'});
-    },50);
-  },100);
-}
 function calToggleTask(pid,ph,tid){
   const p=state.projects.find(pr=>pr.id===pid);if(!p)return;
   const t=(p.tasks[ph]||[]).find(t=>t.id===tid);if(!t)return;
   const subs=t.subtasks||[];
-  const allSubsDone=subs.length===0||subs.every(s=>s.done);
-  if(!allSubsDone){showToast('Complete all subtasks first');return;}
+  if(!subs.every(s=>s.done)&&subs.length){showToast('Complete all subtasks first');return;}
   t.done=true;t.doneAt=Date.now();
   if(!p.archive)p.archive=[];
   p.archive.push({...t,archivedAt:Date.now(),archivedFrom:ph});
@@ -2325,28 +2278,11 @@ function calToggleTask(pid,ph,tid){
   if(t.recur){
     const next={...t,id:'t'+Date.now(),done:false,doneAt:0};
     delete next.archivedAt;delete next.archivedFrom;
+    next.due=t.recur==='daily'?'today':'week';
     p.tasks[ph].push(next);
   }
-  scheduleSave();renderCalendar();
+  scheduleSave();renderCalendar();renderWeekStrip();
   if(mainTab==='tasks'&&state.activeProject===pid)renderTasks(p);
-}
-function calToggleSub(pid,ph,tid,sid){
-  const p=state.projects.find(pr=>pr.id===pid);if(!p)return;
-  const t=(p.tasks[ph]||[]).find(t=>t.id===tid);if(!t)return;
-  const s=(t.subtasks||[]).find(s=>s.id===sid);if(!s)return;
-  s.done=!s.done;
-  clearTimeout(saveTimer);_saveVersion++;pushToSheet();
-  renderCalendar();
-}
-function calAddSub(pid,ph,tid,ctx){
-  const inp=document.getElementById('calsub_'+tid+'_'+ctx);if(!inp)return;
-  const v=inp.value.trim();if(!v)return;
-  const p=state.projects.find(pr=>pr.id===pid);if(!p)return;
-  const t=(p.tasks[ph]||[]).find(t=>t.id===tid);if(!t)return;
-  if(!t.subtasks)t.subtasks=[];
-  t.subtasks.push({id:'s'+Date.now(),text:v,done:false});
-  inp.value='';
-  scheduleSave();renderCalendar();
 }
 
 // ARCHIVE
@@ -2429,6 +2365,20 @@ function confirmQuickCapture(){
   if(state.activeProject===pid)renderTasks(p);
   scheduleSave();showToast('Added to '+p.name);
 }
+
+function toggleDark(){
+  document.body.classList.toggle('dark');
+  const isDark=document.body.classList.contains('dark');
+  localStorage.setItem('ws_dark',isDark?'1':'0');
+  document.getElementById('darkBtn').textContent=isDark?'☀':'🌙';
+}
+// Restore dark mode on load
+(function(){
+  if(localStorage.getItem('ws_dark')==='1'){
+    document.body.classList.add('dark');
+    setTimeout(()=>{const b=document.getElementById('darkBtn');if(b)b.textContent='☀';},100);
+  }
+})();
 
 // TOAST
 function showToast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2200)}
