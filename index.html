@@ -2531,48 +2531,60 @@ function sendRoomEmail(mid){
   const selected=data.attendees||[];
   if(!selected.length){showToast('Select attendees first');return;}
   const toEmails=MTG_ATTENDEES.filter(a=>selected.includes(a.name)).map(a=>a.email);
-  if(!toEmails.length){showToast('No emails found for selected attendees');return;}
+  if(!toEmails.length){showToast('No emails found');return;}
   if(!scriptUrl){showToast('Connect to Sheets first');return;}
   const mt=state.meetingTypes.find(x=>x.id===mid);
   const subject=(mt?mt.label:'Meeting')+' Recap — '+new Date().toLocaleDateString();
   const plainBody=buildRoomRecap(mid);
-  // Minify HTML — strip newlines/extra spaces so it fits in URL
-  const htmlBody=buildRoomEmailHtml(mid).replace(/\n\s*/g,'').replace(/>\s+</g,'><');
-
+  const htmlBody=buildRoomEmailHtml(mid);
   setSyncBadge('busy');
-  const cb='emailCb_'+Date.now();
-  // Try HTML via JSONP GET (minified HTML fits in URL)
-  const payload=encodeURIComponent(JSON.stringify({
-    to:toEmails.join(','),subject,body:plainBody,htmlBody,isHtml:true
-  }));
-  const url=scriptUrl+(scriptUrl.includes('?')?'&':'?')+'action=sendEmail&data='+payload+'&callback='+cb;
 
-  // Check URL length — if too long, fall back to plain text
-  if(url.length>8000){
-    // Too long — send plain text
-    const plainPayload=encodeURIComponent(JSON.stringify({to:toEmails.join(','),subject,body:plainBody}));
-    const plainUrl=scriptUrl+(scriptUrl.includes('?')?'&':'?')+'action=sendEmail&data='+plainPayload+'&callback='+cb;
-    _sendEmailViaScript(cb,plainUrl,toEmails);
-  } else {
-    _sendEmailViaScript(cb,url,toEmails);
-  }
-}
-
-function _sendEmailViaScript(cb,url,toEmails){
-  window[cb]=function(res){
-    delete window[cb];
-    const sc=document.querySelector('[data-jsonp="'+cb+'"]');if(sc)sc.remove();
+  // Step 1: POST the HTML body to Apps Script (stored in ScriptProperties)
+  // Step 2: GET triggers the send using stored HTML
+  const emailKey='email_'+Date.now();
+  fetch(scriptUrl,{
+    method:'POST',
+    body:JSON.stringify({
+      action:'storeEmail',
+      key:emailKey,
+      to:toEmails.join(','),
+      subject,
+      body:plainBody,
+      htmlBody
+    })
+  }).then(()=>{
+    // Step 2: trigger send via JSONP GET using the stored key
+    const cb='emailCb_'+Date.now();
+    const payload=encodeURIComponent(JSON.stringify({key:emailKey}));
+    const url=scriptUrl+(scriptUrl.includes('?')?'&':'?')+'action=sendStoredEmail&data='+payload+'&callback='+cb;
+    window[cb]=function(res){
+      delete window[cb];
+      const sc=document.querySelector('[data-jsonp="'+cb+'"]');if(sc)sc.remove();
+      setSyncBadge('ok');
+      if(res&&(res.ok||res.status==='ok')){showEmailSentModal(toEmails);}
+      else{showToast('Email error: '+(res&&(res.message||res.error)||'check Apps Script logs'));}
+    };
+    const s=document.createElement('script');
+    s.src=url;s.setAttribute('data-jsonp',cb);
+    s.onerror=()=>{delete window[cb];s.remove();setSyncBadge('err');showToast('Email send failed');};
+    document.head.appendChild(s);
+  }).catch(()=>{
+    // If POST fails (CORS), fall back to plain text JSONP directly
     setSyncBadge('ok');
-    if(res&&(res.ok||res.status==='ok')){showEmailSentModal(toEmails);}
-    else{showToast('Email error: '+(res&&(res.message||res.error)||'check Apps Script logs'));}
-  };
-  const s=document.createElement('script');
-  s.src=url;s.setAttribute('data-jsonp',cb);
-  s.onerror=()=>{
-    delete window[cb];s.remove();setSyncBadge('err');
-    showToast('Email failed — redeploy Apps Script and try again');
-  };
-  document.head.appendChild(s);
+    const cb='emailCb_'+Date.now();
+    const payload=encodeURIComponent(JSON.stringify({to:toEmails.join(','),subject,body:plainBody}));
+    const url=scriptUrl+(scriptUrl.includes('?')?'&':'?')+'action=sendEmail&data='+payload+'&callback='+cb;
+    window[cb]=function(res){
+      delete window[cb];
+      const sc=document.querySelector('[data-jsonp="'+cb+'"]');if(sc)sc.remove();
+      setSyncBadge('ok');
+      if(res&&(res.ok||res.status==='ok')){showEmailSentModal(toEmails);}
+      else{showToast('Email error: '+(res&&(res.message||res.error)||'unknown'));}
+    };
+    const s=document.createElement('script');s.src=url;s.setAttribute('data-jsonp',cb);
+    s.onerror=()=>{delete window[cb];s.remove();setSyncBadge('err');showToast('Email failed');};
+    document.head.appendChild(s);
+  });
 }
 
 function showEmailSentModal(toEmails){
