@@ -406,7 +406,20 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 .cal-section-head{font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:5px}
 .cal-section-body{display:flex;flex-direction:column}
 /* SUBTASK INDENT FIX — handled in main CSS above */
-/* MEETINGS */
+/* PHASE ACCORDION */
+.phase-progress{height:3px;border-radius:2px;background:var(--border-md);margin-top:4px;overflow:hidden}
+.phase-progress-fill{height:3px;border-radius:2px;background:#1D9E75;transition:width .3s}
+/* DONE TASK — collapsed to one line at bottom */
+.task-card.task-done-collapsed{opacity:.45;border-style:dashed;cursor:default}
+.task-card.task-done-collapsed:hover{border-color:var(--border);opacity:.55}
+.task-done-line{display:flex;align-items:center;gap:8px;padding:5px 12px;font-size:12px;color:var(--text3)}
+.task-done-line .done-text{text-decoration:line-through;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* TASK STEP NUMBERS */
+.task-step-num{font-size:11px;font-weight:700;color:var(--text3);min-width:22px;flex-shrink:0;line-height:1}
+.sub-step-num{font-size:10px;color:var(--text3);min-width:18px;flex-shrink:0}
+/* IMPORT CLAUDE LIST BUTTON */
+.import-claude-btn{display:flex;align-items:center;gap:5px;font-size:11px;padding:4px 10px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--font)}
+.import-claude-btn:hover{background:var(--surface2)}
 .mtg-layout{display:flex;flex:1;overflow:hidden}
 .mtg-list{width:220px;min-width:220px;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;background:var(--surface)}
 .mtg-list-head{padding:12px 12px 8px;display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--border);flex-shrink:0}
@@ -967,19 +980,142 @@ function renderTasks(p){
   viewingHighlights=false;
   const ph=getPhaseKey();
   const allItems=p.tasks[ph]||[];
-  const highlighted=allItems.filter(t=>t.highlighted&&!t.done);
-  const regular=allItems.filter(t=>!t.highlighted||t.done);
   const list=document.getElementById('taskList');
+
+  // Separate done vs active tasks
+  const active=allItems.filter(t=>!t.done);
+  const done=allItems.filter(t=>t.done);
+
+  const highlighted=active.filter(t=>t.highlighted);
+  const regular=active.filter(t=>!t.highlighted);
+
   document.getElementById('panelLabel').textContent='Tasks & Questions';
+
+  // Phase accordion strip — replaces the old phase-bar
+  renderPhaseAccordion(p);
+
+  // Progress for current phase
+  const total=allItems.length;
+  const doneCount=done.length;
+  const pct=total?Math.round(doneCount/total*100):0;
+
   let html='';
+
+  // Import Claude list button
+  html+=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+    <div style="font-size:11px;color:var(--text3)">${total?`${doneCount}/${total} done · ${pct}%`:''}</div>
+    <button class="import-claude-btn" onclick="toggleImportClaude()" title="Paste a numbered list from Claude to add as tasks">⊕ Import Claude list</button>
+  </div>
+  <div id="importClaudePanel" style="display:none;margin-bottom:8px">
+    <textarea id="importClaudeTa" placeholder="Paste numbered list from Claude here..." style="width:100%;font-size:12.5px;padding:8px 10px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg);color:var(--text);font-family:var(--font);outline:none;resize:none;min-height:80px;line-height:1.5"></textarea>
+    <div style="display:flex;gap:6px;margin-top:5px">
+      <button class="btn dark sm" onclick="importClaudeList()">Add to this phase</button>
+      <button class="btn sm" onclick="toggleImportClaude()">Cancel</button>
+    </div>
+  </div>`;
+
   if(highlighted.length){
-    html+=`<div class="highlights-section"><div class="highlights-header">★ Highlights / takeaways</div>${highlighted.map(t=>renderTaskCard(t,false)).join('')}</div>`;
+    html+=`<div class="highlights-section"><div class="highlights-header">★ Highlights</div>${highlighted.map((t,i)=>renderTaskCard(t,false,i+1)).join('')}</div>`;
   }
-  html+=regular.length?regular.map(t=>renderTaskCard(t,false)).join(''):`<div class="empty">No tasks yet — add one above</div>`;
+
+  // Active tasks with step numbers
+  html+=regular.length?regular.map((t,i)=>renderTaskCard(t,false,highlighted.length+i+1)).join('')
+    :`<div class="empty">No tasks yet — add one above</div>`;
+
+  // Done tasks — collapsed to single lines at the bottom
+  if(done.length){
+    html+=`<div style="margin-top:8px;border-top:1px dashed var(--border);padding-top:6px">
+      <div style="font-size:10px;color:var(--text3);font-weight:500;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Completed (${done.length})</div>
+      ${done.map(t=>renderDoneCollapsed(t)).join('')}
+    </div>`;
+  }
+
   list.innerHTML=html;
 }
 
-function renderTaskCard(t,inHL){
+function renderPhaseAccordion(p){
+  const bar=document.getElementById('phaseBar');if(!bar)return;
+  const phases=p.phases||[];
+  const activePh=getPhaseKey();
+  bar.innerHTML=phases.map((ph,i)=>{
+    const tasks=p.tasks[ph]||[];
+    const total=tasks.length;
+    const done=tasks.filter(t=>t.done).length;
+    const pct=total?Math.round(done/total*100):0;
+    const isActive=ph===activePh;
+    const color=p.phaseColors&&p.phaseColors[ph]||'#888';
+    return`<div class="phase-chip ${isActive?'active':''} ${done===total&&total>0?'done':''}"
+      style="background:${color};min-width:90px"
+      onclick="selPhase(${i})"
+      oncontextmenu="showPhaseCtx(event,${i})">
+      <span style="font-size:12px">${esc(ph)}</span>
+      ${total>0?`<div class="phase-progress"><div class="phase-progress-fill" style="width:${pct}%;background:rgba(255,255,255,.6)"></div></div>`:''}
+    </div>`;
+  }).join('')+
+  `<div class="phase-chip" style="background:none;border:1.5px dashed var(--border-md);color:var(--text3);opacity:.7" onclick="addPhase()">+ phase</div>`;
+}
+
+function renderDoneCollapsed(t){
+  const subTotal=(t.subtasks||[]).length;
+  const subDone=(t.subtasks||[]).filter(s=>s.done).length;
+  return`<div class="task-card task-done-collapsed" id="tc_${t.id}">
+    <div class="task-done-line">
+      <input type="checkbox" class="task-cb" checked onchange="toggleTask('${t.id}')" onclick="event.stopPropagation()" title="Unmark as done"/>
+      <span class="done-text" title="${esc(t.text)}">${esc(t.text)}</span>
+      ${subTotal?`<span style="font-size:10px;color:var(--text3)">${subDone}/${subTotal}</span>`:''}
+      <button class="icon-btn" onclick="delTask('${t.id}');event.stopPropagation()" title="Delete" style="opacity:.5">×</button>
+    </div>
+  </div>`;
+}
+
+// Toggle Import Claude list panel
+function toggleImportClaude(){
+  const panel=document.getElementById('importClaudePanel');
+  if(panel)panel.style.display=panel.style.display==='none'?'block':'none';
+}
+
+// Parse and import a numbered list from Claude into current phase
+function importClaudeList(){
+  const ta=document.getElementById('importClaudeTa');
+  if(!ta)return;
+  const raw=ta.value.trim();if(!raw)return;
+  const p=getProj();if(!p)return;
+  const ph=getPhaseKey();if(!ph)return;
+  if(!p.tasks[ph])p.tasks[ph]=[];
+
+  const lines=raw.split('\n').map(l=>l.trim()).filter(Boolean);
+  let currentTask=null;
+  let added=0;
+
+  lines.forEach(line=>{
+    // Match numbered items: "1.", "1)", "Step 1:", "1 -" etc.
+    const mainMatch=line.match(/^(?:step\s*)?(\d+)[.):\-]\s*(.+)/i);
+    // Match sub-items: "  a.", "  -", "  •", "  1.1"
+    const subMatch=line.match(/^(?:[a-z][.)]\s+|[-•*]\s+|[ivx]+[.)]\s+|\d+\.\d+[.)]\s*)(.+)/i);
+
+    if(mainMatch){
+      const text=mainMatch[2].trim();
+      currentTask={id:'t'+Date.now()+Math.random().toString(36).slice(2),
+        text,type:'task',done:false,highlighted:false,
+        subtasks:[],note:'',files:[],badge:'none',due:'none',subsCollapsed:false,doneAt:0};
+      p.tasks[ph].push(currentTask);
+      added++;
+    } else if(subMatch&&currentTask){
+      const text=subMatch[1].trim();
+      currentTask.subtasks.push({id:'s'+Date.now()+Math.random().toString(36).slice(2),text,done:false});
+    } else if(currentTask&&line.length>3){
+      // Extra lines — append to last task's note
+      currentTask.note=(currentTask.note?currentTask.note+'\n':'')+line;
+    }
+  });
+
+  ta.value='';
+  toggleImportClaude();
+  scheduleSave();renderTasks(p);
+  showToast('Added '+added+' task'+(added!==1?'s':'')+' to '+ph);
+}
+
+function renderTaskCard(t,inHL,stepNum){
   const isExp=expandedTasks[t.id];
   const subtasks=t.subtasks||[];
   const subDone=subtasks.filter(s=>s.done).length;
@@ -990,6 +1126,7 @@ function renderTaskCard(t,inHL){
   const badgeLabels={none:'',work:'Work',look:'Look into',ask:'Ask'};
   const badgeClass={none:'badge-none',work:'badge-work',look:'badge-look',ask:'badge-ask'};
   const showSubs=subtasks.length>0&&!t.subsCollapsed;
+  const allSubsDone=subtasks.length===0||subtasks.every(s=>s.done);
 
   return`<div class="task-card ${t.highlighted&&!t.done?'highlighted':''} ${isQ?'question-card':''}"
     id="tc_${t.id}"
@@ -998,7 +1135,8 @@ function renderTaskCard(t,inHL){
     oncontextmenu="showTaskCtx(event,'${t.id}')">
     <div class="task-row" onclick="void(0)">
       <span class="drag-handle" draggable="true" ondragstart="dragStart(event,'${t.id}')" title="Drag to reorder">⠿</span>
-      <input type="checkbox" class="task-cb" ${t.done?'checked':''} onchange="toggleTask('${t.id}')" onclick="event.stopPropagation()"/>
+      <input type="checkbox" class="task-cb" ${t.done?'checked':''} onchange="toggleTask('${t.id}')" onclick="event.stopPropagation()" title="${allSubsDone?'Mark complete':'Complete all subtasks first'}"/>
+      ${stepNum?`<span class="task-step-num">${stepNum}.</span>`:''}
       ${isQ?`<span class="q-badge">?</span>`:''}
       <div class="task-text-wrap">
         ${isEditing
@@ -1011,20 +1149,21 @@ function renderTaskCard(t,inHL){
       </div>
       <div class="task-actions" onclick="event.stopPropagation()">
         ${t.due&&t.due!=='none'?`<span class="due-badge due-${t.due}" onclick="cycleDue('${t.id}')" title="Due date">${DUE_LABELS[t.due]}</span>`:`<span class="due-badge" style="opacity:.3;font-size:9px" onclick="cycleDue('${t.id}')" title="Set due date">Due</span>`}
-        <span class="task-badge ${badgeClass[badge]}" onclick="cycleBadge('${t.id}')" title="Tag: ${badgeLabels[badge]||'None'}">${badgeLabels[badge]||'Tag'}</span>
+        <span class="task-badge ${badgeClass[badge]}" onclick="cycleBadge('${t.id}')" title="Tag">${badgeLabels[badge]||'Tag'}</span>
         <button class="icon-btn ${t.highlighted?'star-active':''}" onclick="toggleHighlight('${t.id}')" title="Highlight">★</button>
-        <button class="icon-btn" onclick="copyTask('${t.id}')" title="Copy text">⎘</button>
+        <button class="icon-btn" onclick="copyTask('${t.id}')" title="Copy">⎘</button>
         <button class="icon-btn" onclick="startEditTask('${t.id}')" title="Edit">✎</button>
         ${isQ?`<button class="icon-btn" onclick="convertToTask('${t.id}')" title="Convert to task">☑</button>`:`<button class="icon-btn" onclick="convertToQuestion('${t.id}')" title="Convert to question">?</button>`}
-        <button class="icon-btn" onclick="toggleExpand('${t.id}')" title="${isExp?'Hide details':'Show details (notes/files)'}">≡</button>
+        <button class="icon-btn" onclick="toggleExpand('${t.id}')" title="${isExp?'Hide':'Show'} details">≡</button>
         <button class="icon-btn" onclick="delTask('${t.id}')" title="Delete">×</button>
       </div>
     </div>
     ${subtasks.length>0?`
     <div class="subtask-tally">
-      ${showSubs?subtasks.map(s=>{
+      ${showSubs?subtasks.map((s,si)=>{
         const isES=editingSubtask===s.id;
         return`<div class="subtask-row subtask-tally-row ${s.done?'done-sub':''}">
+          <span class="sub-step-num">${si+1}.</span>
           <input type="checkbox" class="st-cb" ${s.done?'checked':''} onchange="toggleSub('${t.id}','${s.id}')" onclick="event.stopPropagation()"/>
           ${isES?`<input class="s-edit-inp st-text" id="sedit_${s.id}" value="${esc(s.text)}" onblur="saveSubEdit('${t.id}','${s.id}',this.value)" onkeydown="if(event.key==='Enter')saveSubEdit('${t.id}','${s.id}',this.value);if(event.key==='Escape'){editingSubtask=null;renderTasks(getProj())}" onclick="event.stopPropagation()"/>`
           :`<span class="st-text ${s.done?'done':''}" ondblclick="startEditSub('${s.id}')" style="user-select:text">${linkify(s.text)}</span>`}
@@ -1032,7 +1171,7 @@ function renderTaskCard(t,inHL){
         </div>`;
       }).join(''):''}
       <div style="display:flex;align-items:center;gap:6px;padding-top:2px">
-        <span style="font-size:11px;color:var(--text3);cursor:pointer" onclick="toggleSubsCollapse('${t.id}');event.stopPropagation()">${showSubs?'▲ collapse':'▼ show '+subtasks.length+' ('+subDone+'/'+subtasks.length+' done)'}</span>
+        <span style="font-size:11px;color:var(--text3);cursor:pointer" onclick="toggleSubsCollapse('${t.id}');event.stopPropagation()">${showSubs?'▲ collapse':'▼ show '+subtasks.length+' ('+subDone+'/'+subtasks.length+')'}</span>
       </div>
     </div>
     <div class="add-sub-inline" onclick="event.stopPropagation()">
@@ -1060,7 +1199,6 @@ function renderTaskCard(t,inHL){
         </div>
         <div class="file-list">${files.map((f,fi)=>{
           const isImg=f.url&&(f.url.startsWith('data:image')||/\.(png|jpg|jpeg|gif|webp|svg)$/i.test(f.name));
-          const isLink=f.url&&!f.url.startsWith('data:')&&!f.url.startsWith('pending:');
           return isImg&&f.url.startsWith('data:')?`
             <div class="file-img-wrap">
               <img class="file-img-preview" src="${esc(f.url)}" alt="${esc(f.name)}" onclick="event.stopPropagation()" />
@@ -1068,16 +1206,16 @@ function renderTaskCard(t,inHL){
               <button class="icon-btn" onclick="removeFile('${t.id}',${fi});event.stopPropagation()" title="Remove" style="position:absolute;top:4px;right:4px;background:rgba(255,255,255,0.85);font-size:13px">×</button>
             </div>`
           :`<span style="display:flex;align-items:center;gap:4px">
-              ${isLink?`<a class="file-chip" href="${esc(f.url)}" target="_blank" onclick="event.stopPropagation()">📎 ${esc(f.name)}</a>`:`<span class="file-chip">📎 ${esc(f.name)}</span>`}
-              <button class="icon-btn" onclick="removeFile('${t.id}',${fi});event.stopPropagation()" title="Remove" style="font-size:11px">×</button>
+              ${f.url&&!f.url.startsWith('data:')&&!f.url.startsWith('pending:')?`<a class="file-chip" href="${esc(f.url)}" target="_blank" onclick="event.stopPropagation()">📎 ${esc(f.name)}</a>`:`<span class="file-chip">${f.url&&f.url.startsWith('pending:')?'⏳ uploading…':'📎 '+esc(f.name)}</span>`}
+              <button class="icon-btn" onclick="removeFile('${t.id}',${fi});event.stopPropagation()" title="Remove" style="font-size:12px">×</button>
             </span>`;
-        }).join('')}
-        </div>
+        }).join('')}</div>
       </div>
     </div>`:''}
   </div>`;
 }
 
+  
 function handleCardClick(e,id){
   const tag=e.target.tagName.toLowerCase();
   if(tag==='input'||tag==='button'||tag==='a'||tag==='textarea'||tag==='span')return;
@@ -1178,16 +1316,6 @@ function toggleExpand(id){
   else renderTasks(getProj());
   if(expandedTasks[id])setTimeout(()=>{const el=document.getElementById('sub_'+id);if(el)el.focus()},50);
 }
-function toggleTask(id){
-  const p=getProj();const ph=viewingHighlights?findTaskPhase(id):getPhaseKey();
-  const t=(p.tasks[ph]||[]).find(t=>t.id===id);
-  if(t){
-    t.done=!t.done;
-    if(t.done)t.doneAt=Date.now(); else delete t.doneAt;
-    if(viewingHighlights)renderTasksHighlights();else{renderTasks(p);renderPhases(p);}
-    clearTimeout(saveTimer);_saveVersion++;pushToSheet();
-  }
-}
 function toggleHighlight(id){
   const p=getProj();const ph=viewingHighlights?findTaskPhase(id):getPhaseKey();
   const t=(p.tasks[ph]||[]).find(t=>t.id===id);
@@ -1229,15 +1357,40 @@ function addSub(tid){
   inp.value='';if(viewingHighlights)renderTasksHighlights();else renderTasks(p);scheduleSave();
   setTimeout(()=>{const el=document.getElementById('sub_'+tid);if(el)el.focus()},30);
 }
+function toggleTask(id){
+  const p=getProj();const ph=viewingHighlights?findTaskPhase(id):getPhaseKey();
+  const t=(p.tasks[ph]||[]).find(t=>t.id===id);
+  if(t){
+    // If trying to check but has undone subtasks, warn
+    if(!t.done){
+      const undone=(t.subtasks||[]).filter(s=>!s.done);
+      if(undone.length>0){
+        // Auto-check all subtasks first, then mark done
+        (t.subtasks||[]).forEach(s=>s.done=true);
+      }
+    }
+    t.done=!t.done;
+    if(t.done)t.doneAt=Date.now(); else delete t.doneAt;
+    if(viewingHighlights)renderTasksHighlights();else{renderTasks(p);renderPhases(p);}
+    scheduleSave();
+  }
+}
 function toggleSub(tid,sid){
   const p=getProj();const ph=viewingHighlights?findTaskPhase(tid):getPhaseKey();
   const t=(p.tasks[ph]||[]).find(t=>t.id===tid);
   const s=t&&(t.subtasks||[]).find(s=>s.id===sid);
   if(s){
     s.done=!s.done;
+    // If all subtasks now done, auto-mark the task as done too
+    const allDone=(t.subtasks||[]).every(s=>s.done)&&(t.subtasks||[]).length>0;
+    if(allDone&&!t.done){
+      t.done=true;t.doneAt=Date.now();
+    } else if(!s.done&&t.done){
+      // Unchecking a subtask unchecks the parent task too
+      t.done=false;delete t.doneAt;
+    }
     if(viewingHighlights)renderTasksHighlights();else renderTasks(p);
-    // Save immediately
-    clearTimeout(saveTimer);_saveVersion++;pushToSheet();
+    scheduleSave();
   }
 }
 function delSub(tid,sid){
