@@ -897,6 +897,7 @@ function render(){
   renderPhases(p);
   if(mainTab==='tasks')renderTasks(p);
   else if(mainTab==='calendar')renderCalendar();
+  else if(mainTab==='meetings')renderMeetings();
   else if(mainTab==='archive')renderArchive();
   renderNotes(p);
   if(scriptUrl){const ui=document.getElementById('urlInput');if(ui)ui.value=scriptUrl;}
@@ -981,18 +982,18 @@ function renderTasks(p){
   const ph=getPhaseKey();
   const allItems=p.tasks[ph]||[];
   const list=document.getElementById('taskList');
+  if(!list)return;
 
   // Separate done vs active tasks
   const active=allItems.filter(t=>!t.done);
   const done=allItems.filter(t=>t.done);
-
   const highlighted=active.filter(t=>t.highlighted);
   const regular=active.filter(t=>!t.highlighted);
 
   document.getElementById('panelLabel').textContent='Tasks & Questions';
 
-  // Phase accordion strip — replaces the old phase-bar
-  renderPhaseAccordion(p);
+  // Update phase chips to show progress bars (enhance existing chips)
+  updatePhaseProgressBars(p);
 
   // Progress for current phase
   const total=allItems.length;
@@ -1018,11 +1019,10 @@ function renderTasks(p){
     html+=`<div class="highlights-section"><div class="highlights-header">★ Highlights</div>${highlighted.map((t,i)=>renderTaskCard(t,false,i+1)).join('')}</div>`;
   }
 
-  // Active tasks with step numbers
   html+=regular.length?regular.map((t,i)=>renderTaskCard(t,false,highlighted.length+i+1)).join('')
     :`<div class="empty">No tasks yet — add one above</div>`;
 
-  // Done tasks — collapsed to single lines at the bottom
+  // Done tasks collapsed at bottom
   if(done.length){
     html+=`<div style="margin-top:8px;border-top:1px dashed var(--border);padding-top:6px">
       <div style="font-size:10px;color:var(--text3);font-weight:500;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Completed (${done.length})</div>
@@ -1033,26 +1033,29 @@ function renderTasks(p){
   list.innerHTML=html;
 }
 
-function renderPhaseAccordion(p){
-  const bar=document.getElementById('phaseBar');if(!bar)return;
-  const phases=p.phases||[];
-  const activePh=getPhaseKey();
-  bar.innerHTML=phases.map((ph,i)=>{
+// Add progress bars to existing phase chips without replacing them
+function updatePhaseProgressBars(p){
+  if(!p)return;
+  p.phases.forEach((ph,i)=>{
+    const chip=document.querySelector(`.phase-chip:nth-child(${i+1})`);
+    if(!chip)return;
     const tasks=p.tasks[ph]||[];
     const total=tasks.length;
     const done=tasks.filter(t=>t.done).length;
     const pct=total?Math.round(done/total*100):0;
-    const isActive=ph===activePh;
-    const color=p.phaseColors&&p.phaseColors[ph]||'#888';
-    return`<div class="phase-chip ${isActive?'active':''} ${done===total&&total>0?'done':''}"
-      style="background:${color};min-width:90px"
-      onclick="selPhase(${i})"
-      oncontextmenu="showPhaseCtx(event,${i})">
-      <span style="font-size:12px">${esc(ph)}</span>
-      ${total>0?`<div class="phase-progress"><div class="phase-progress-fill" style="width:${pct}%;background:rgba(255,255,255,.6)"></div></div>`:''}
-    </div>`;
-  }).join('')+
-  `<div class="phase-chip" style="background:none;border:1.5px dashed var(--border-md);color:var(--text3);opacity:.7" onclick="addPhase()">+ phase</div>`;
+    // Add/update progress bar inside chip
+    let bar=chip.querySelector('.phase-progress');
+    if(!bar&&total>0){
+      bar=document.createElement('div');
+      bar.className='phase-progress';
+      bar.innerHTML=`<div class="phase-progress-fill" style="width:0%"></div>`;
+      chip.appendChild(bar);
+    }
+    if(bar){
+      const fill=bar.querySelector('.phase-progress-fill');
+      if(fill)fill.style.width=pct+'%';
+    }
+  });
 }
 
 function renderDoneCollapsed(t){
