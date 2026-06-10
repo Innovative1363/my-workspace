@@ -2506,35 +2506,43 @@ function sendRoomEmail(mid){
   const mt=state.meetingTypes.find(x=>x.id===mid);
   const subject=(mt?mt.label:'Meeting')+' Recap — '+new Date().toLocaleDateString();
   const plainBody=buildRoomRecap(mid);
-  const htmlBody=buildRoomEmailHtml(mid);
+  // Minify HTML — strip newlines/extra spaces so it fits in URL
+  const htmlBody=buildRoomEmailHtml(mid).replace(/\n\s*/g,'').replace(/>\s+</g,'><');
+
   setSyncBadge('busy');
-  // POST handles large HTML payloads; CORS block is expected but request goes through
-  fetch(scriptUrl,{method:'POST',body:JSON.stringify({action:'sendEmail',to:toEmails.join(','),subject,body:plainBody,htmlBody,isHtml:true})})
-  .then(r=>r.text())
-  .then(txt=>{
-    let res={};try{res=JSON.parse(txt);}catch(e){res={ok:true};}
+  const cb='emailCb_'+Date.now();
+  // Try HTML via JSONP GET (minified HTML fits in URL)
+  const payload=encodeURIComponent(JSON.stringify({
+    to:toEmails.join(','),subject,body:plainBody,htmlBody,isHtml:true
+  }));
+  const url=scriptUrl+(scriptUrl.includes('?')?'&':'?')+'action=sendEmail&data='+payload+'&callback='+cb;
+
+  // Check URL length — if too long, fall back to plain text
+  if(url.length>8000){
+    // Too long — send plain text
+    const plainPayload=encodeURIComponent(JSON.stringify({to:toEmails.join(','),subject,body:plainBody}));
+    const plainUrl=scriptUrl+(scriptUrl.includes('?')?'&':'?')+'action=sendEmail&data='+plainPayload+'&callback='+cb;
+    _sendEmailViaScript(cb,plainUrl,toEmails);
+  } else {
+    _sendEmailViaScript(cb,url,toEmails);
+  }
+}
+
+function _sendEmailViaScript(cb,url,toEmails){
+  window[cb]=function(res){
+    delete window[cb];
+    const sc=document.querySelector('[data-jsonp="'+cb+'"]');if(sc)sc.remove();
     setSyncBadge('ok');
-    if(res.error&&!res.ok){showToast('Email error: '+res.error);}
-    else{showEmailSentModal(toEmails);}
-  })
-  .catch(()=>{
-    // CORS block is expected from Apps Script — the request still went through
-    // Confirm with a plain-text JSONP fallback to verify
-    setSyncBadge('ok');
-    const cb='verifyEmail_'+Date.now();
-    const vPayload=encodeURIComponent(JSON.stringify({to:toEmails.join(','),subject,body:plainBody}));
-    const vUrl=scriptUrl+(scriptUrl.includes('?')?'&':'?')+'action=sendEmail&data='+vPayload+'&callback='+cb;
-    window[cb]=function(res){
-      delete window[cb];
-      const sc=document.querySelector('[data-jsonp="'+cb+'"]');if(sc)sc.remove();
-      setSyncBadge('ok');
-      if(res&&(res.ok||res.status==='ok')){showEmailSentModal(toEmails);}
-      else{showToast('Email error: '+(res&&(res.message||res.error)||'check Apps Script logs'));}
-    };
-    const s=document.createElement('script');s.src=vUrl;s.setAttribute('data-jsonp',cb);
-    s.onerror=()=>{delete window[cb];s.remove();showToast('Could not confirm — check email inbox');};
-    document.head.appendChild(s);
-  });
+    if(res&&(res.ok||res.status==='ok')){showEmailSentModal(toEmails);}
+    else{showToast('Email error: '+(res&&(res.message||res.error)||'check Apps Script logs'));}
+  };
+  const s=document.createElement('script');
+  s.src=url;s.setAttribute('data-jsonp',cb);
+  s.onerror=()=>{
+    delete window[cb];s.remove();setSyncBadge('err');
+    showToast('Email failed — redeploy Apps Script and try again');
+  };
+  document.head.appendChild(s);
 }
 
 function showEmailSentModal(toEmails){
