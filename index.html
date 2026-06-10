@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -1858,7 +1858,7 @@ function newMeeting(){
   activeMeeting=id;
   renderMeetings();scheduleSave();
 }
-function selectMeeting(id){activeMeeting=id;renderMeetings();}
+function selectMeeting(id){if(activeMeeting)saveMtgDraft(activeMeeting);activeMeeting=id;renderMeetings();if(id)setTimeout(()=>restoreMtgDraft(id),30);}
 function updateMeeting(id,field,val){
   const m=state.meetings.find(x=>x.id===id);if(!m)return;
   m[field]=val;scheduleSave();
@@ -1938,7 +1938,12 @@ function switchMainTab(tab){
   } else if(tab==='meetings'){
     if(tasksContent)tasksContent.style.display='none';
     if(calPanel)calPanel.style.display='none';
-    if(mtgPanel){mtgPanel.style.display='flex';renderMeetings();}
+    if(mtgPanel){
+      mtgPanel.style.display='flex';
+      renderMeetings();
+      // Restore any in-progress draft after render
+      if(activeMeeting)setTimeout(()=>restoreMtgDraft(activeMeeting),30);
+    }
     if(arcPanel)arcPanel.style.display='none';
     if(phaseBar)phaseBar.style.display='none';
   } else if(tab==='archive'){
@@ -2002,7 +2007,8 @@ function renderMeetings(){
       style="${isActive?`background:${t.color}18;border-left-color:${t.color}`:''}">
       <span class="mtg-item-dot" style="background:${t.color}"></span>
       <div style="flex:1;min-width:0">
-        <div class="mtg-item-name" style="${isActive?`color:${t.color};font-weight:600`:''}">${esc(t.label)}</div>
+        <div class="mtg-item-name" style="${isActive?`color:${t.color};font-weight:600`:''}"
+          ondblclick="renameMeetingType('${t.id}',this)" title="Double-click to rename">${esc(t.label)}</div>
         <div class="mtg-item-date">${entryCount} entries${openTasks?` · ${openTasks} open tasks`:''}</div>
       </div>
     </div>`;
@@ -2152,7 +2158,7 @@ function renderMeetingRoom(mt){
   </div>`;
 }
 
-function selectMeeting(id){activeMeeting=id;renderMeetings();}
+function selectMeeting(id){if(activeMeeting)saveMtgDraft(activeMeeting);activeMeeting=id;renderMeetings();if(id)setTimeout(()=>restoreMtgDraft(id),30);}
 
 function addMeetingType(){
   const label=prompt('Meeting type name (e.g. "Manufacturing"):');
@@ -2170,6 +2176,35 @@ function addMeetingType(){
 function updateMeetingTypeName(id,val){
   const t=state.meetingTypes.find(x=>x.id===id);if(!t)return;
   t.label=val;scheduleSave();
+  // Update sidebar label live without full re-render
+  document.querySelectorAll('.mtg-item-name').forEach(el=>{
+    if(el.closest('.mtg-item')&&el.closest('.mtg-item').onclick){
+      // handled by renameMeetingType
+    }
+  });
+}
+function renameMeetingType(id,el){
+  const t=state.meetingTypes.find(x=>x.id===id);if(!t)return;
+  const current=t.label;
+  // Replace the div with an inline input
+  const inp=document.createElement('input');
+  inp.value=current;
+  inp.style.cssText=`font-size:14px;font-weight:600;border:none;background:transparent;outline:2px solid ${t.color};border-radius:3px;padding:1px 4px;width:100%;font-family:var(--font);color:${t.color}`;
+  el.replaceWith(inp);
+  inp.focus();inp.select();
+  const save=()=>{
+    const val=inp.value.trim()||current;
+    t.label=val;
+    scheduleSave();
+    // Update header input too if this room is active
+    const headerInp=document.querySelector('.mtg-detail-head input');
+    if(headerInp&&activeMeeting===id)headerInp.value=val;
+    // Re-render sidebar only
+    renderMeetings();
+  };
+  inp.onblur=save;
+  inp.onkeydown=e=>{if(e.key==='Enter')inp.blur();if(e.key==='Escape'){t.label=current;inp.blur();}};
+  inp.onclick=e=>e.stopPropagation();
 }
 function deleteMeetingType(id){
   if(!confirm('Delete this meeting type and all its history?'))return;
@@ -2178,24 +2213,56 @@ function deleteMeetingType(id){
   activeMeeting=state.meetingTypes.length?state.meetingTypes[0].id:null;
   scheduleSave();renderMeetings();
 }
+// Draft buffers — persist textarea/input content across tab switches
+const mtgDrafts={}; // {mid: {text, date}}
+const mtgTaskDrafts={}; // {mid: taskInputText}
+
+// Call this before any re-render that would wipe the textarea
+function saveMtgDraft(mid){
+  const ta=document.getElementById('roomEntry_'+mid);
+  const dateEl=document.getElementById('roomEntryDate_'+mid);
+  const taskInp=document.getElementById('roomNewTask_'+mid);
+  if(ta||dateEl)mtgDrafts[mid]={text:ta?ta.value:'',date:dateEl?dateEl.value:new Date().toISOString().slice(0,10)};
+  if(taskInp)mtgTaskDrafts[mid]=taskInp.value;
+}
+// Call after render to restore draft
+function restoreMtgDraft(mid){
+  const draft=mtgDrafts[mid];
+  if(draft){
+    const ta=document.getElementById('roomEntry_'+mid);
+    const dateEl=document.getElementById('roomEntryDate_'+mid);
+    if(ta&&draft.text)ta.value=draft.text;
+    if(dateEl&&draft.date)dateEl.value=draft.date;
+  }
+  const taskDraft=mtgTaskDrafts[mid];
+  if(taskDraft){
+    const taskInp=document.getElementById('roomNewTask_'+mid);
+    if(taskInp)taskInp.value=taskDraft;
+  }
+}
+
 function toggleRoomAttendee(mid,name){
+  saveMtgDraft(mid);
   initMeetingTypes();
   const data=state.meetingData[mid];if(!data)return;
   if(!data.attendees)data.attendees=[];
   const idx=data.attendees.indexOf(name);
   if(idx>=0)data.attendees.splice(idx,1);else data.attendees.push(name);
   scheduleSave();renderMeetings();
+  restoreMtgDraft(mid);
 }
 function addRoomEntry(mid){
   const ta=document.getElementById('roomEntry_'+mid);
   const dateEl=document.getElementById('roomEntryDate_'+mid);
-  const text=ta?ta.value.trim():'';if(!text)return;
+  const text=ta?ta.value.trim():(mtgDrafts[mid]?mtgDrafts[mid].text.trim():'');
+  if(!text)return;
   const data=state.meetingData[mid];if(!data)return;
   if(!data.history)data.history=[];
-  data.history.push({text,date:dateEl?dateEl.value:new Date().toISOString().slice(0,10)});
+  data.history.push({text,date:dateEl?dateEl.value:(mtgDrafts[mid]?mtgDrafts[mid].date:new Date().toISOString().slice(0,10))});
+  // Clear drafts after save
+  delete mtgDrafts[mid];
   if(ta)ta.value='';
   scheduleSave();renderMeetings();
-  // Scroll history to bottom after render
   setTimeout(()=>{
     const hEl=document.querySelector(`#meetingsView .act-history`);
     if(hEl)hEl.scrollTop=hEl.scrollHeight;
@@ -2206,17 +2273,22 @@ function deleteRoomEntry(mid,idx){
   data.history.splice(idx,1);scheduleSave();renderMeetings();
 }
 function addRoomTask(mid){
+  saveMtgDraft(mid);
   const inp=document.getElementById('roomNewTask_'+mid);
   const text=inp?inp.value.trim():'';
   const data=state.meetingData[mid];if(!data)return;
   if(!data.tasks)data.tasks=[];
   data.tasks.push({text:text||'',done:false,owner:'',projId:''});
+  delete mtgTaskDrafts[mid];
   if(inp)inp.value='';
   scheduleSave();renderMeetings();
+  restoreMtgDraft(mid);
 }
 function toggleRoomTask(mid,i){
+  saveMtgDraft(mid);
   const data=state.meetingData[mid];if(!data||!data.tasks[i])return;
   data.tasks[i].done=!data.tasks[i].done;scheduleSave();renderMeetings();
+  restoreMtgDraft(mid);
 }
 function updateRoomTask(mid,i,field,val){
   const data=state.meetingData[mid];if(!data||!data.tasks[i])return;
