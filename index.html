@@ -608,6 +608,7 @@ let activeTab='notes';
 let dragSrcId=null;
 let showImport=false;
 let activeMeeting=null;
+let mainTab='tasks';
 
 let state={
   projects:[],meetings:[],
@@ -1035,27 +1036,29 @@ function renderTasks(p){
 
 // Add progress bars to existing phase chips without replacing them
 function updatePhaseProgressBars(p){
-  if(!p)return;
-  p.phases.forEach((ph,i)=>{
-    const chip=document.querySelector(`.phase-chip:nth-child(${i+1})`);
-    if(!chip)return;
-    const tasks=p.tasks[ph]||[];
-    const total=tasks.length;
-    const done=tasks.filter(t=>t.done).length;
-    const pct=total?Math.round(done/total*100):0;
-    // Add/update progress bar inside chip
-    let bar=chip.querySelector('.phase-progress');
-    if(!bar&&total>0){
-      bar=document.createElement('div');
-      bar.className='phase-progress';
-      bar.innerHTML=`<div class="phase-progress-fill" style="width:0%"></div>`;
-      chip.appendChild(bar);
-    }
-    if(bar){
-      const fill=bar.querySelector('.phase-progress-fill');
+  try{
+    if(!p)return;
+    const bar=document.getElementById('phaseBar');
+    if(!bar||bar.style.display==='none')return;
+    const chips=bar.querySelectorAll('.phase-chip:not(.highlights-chip):not([onclick*="addPhase"])');
+    p.phases.forEach((ph,i)=>{
+      const chip=chips[i];if(!chip)return;
+      const tasks=p.tasks[ph]||[];
+      const total=tasks.length;
+      const done=tasks.filter(t=>t.done).length;
+      const pct=total?Math.round(done/total*100):0;
+      if(total===0)return;
+      let bar2=chip.querySelector('.phase-progress');
+      if(!bar2){
+        bar2=document.createElement('div');
+        bar2.className='phase-progress';
+        bar2.innerHTML=`<div class="phase-progress-fill" style="width:0%"></div>`;
+        chip.appendChild(bar2);
+      }
+      const fill=bar2.querySelector('.phase-progress-fill');
       if(fill)fill.style.width=pct+'%';
-    }
-  });
+    });
+  }catch(e){}
 }
 
 function renderDoneCollapsed(t){
@@ -1861,7 +1864,6 @@ function newMeeting(){
   activeMeeting=id;
   renderMeetings();scheduleSave();
 }
-function selectMeeting(id){if(activeMeeting)saveMtgDraft(activeMeeting);activeMeeting=id;renderMeetings();if(id)setTimeout(()=>restoreMtgDraft(id),30);}
 function updateMeeting(id,field,val){
   const m=state.meetings.find(x=>x.id===id);if(!m)return;
   m[field]=val;scheduleSave();
@@ -2439,7 +2441,6 @@ function toggleSectAttendee(mid,key,name){}
 function sendGmailRecap(mid){sendRoomEmail(mid);}
 function addMtgEntry(mid,key){addRoomEntry(mid);}
 function deleteMtgEntry(mid,key,idx){deleteRoomEntry(mid,idx);}
-function newMeeting(){addMeetingType();}
 function buildMeetingRecap(mid){return buildRoomRecap(mid);}
 function copyMeetingRecap(mid){copyRoomRecap(mid);}
 function previewMeetingRecap(mid){previewRoomRecap(mid);}
