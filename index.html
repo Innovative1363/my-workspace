@@ -2383,117 +2383,147 @@ function buildRoomEmailHtml(mid){
   const color=mt?mt.color:'#378ADD';
   const label=mt?mt.label:'Meeting';
   const icon=mt?mt.icon:'📋';
+  const iusGreen='#8DC63F';
+  const iusDark='#1a1a1a';
   const today=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  const logoUrl='https://innovative1363.github.io/my-workspace/Logo_PNG.png';
 
   const recentHistory=(data.history||[]).slice(-8);
   const openTasks=(data.tasks||[]).filter(t=>!t.done);
   const doneTasks=(data.tasks||[]).filter(t=>t.done);
 
+  // Group open tasks by owner
+  const byOwner={};
+  openTasks.forEach(t=>{
+    const owner=t.owner||'Unassigned';
+    if(!byOwner[owner])byOwner[owner]=[];
+    byOwner[owner].push(t);
+  });
+
   const historyRows=recentHistory.map(e=>`
     <tr>
-      <td style="padding:6px 12px;font-size:12px;color:#64748b;white-space:nowrap;vertical-align:top;border-bottom:1px solid #f1f5f9">${e.date||''}</td>
-      <td style="padding:6px 12px;font-size:13px;color:#1e293b;line-height:1.5;border-bottom:1px solid #f1f5f9">${(e.text||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</td>
+      <td style="padding:8px 16px;font-family:Arial,sans-serif;font-size:11px;color:#6b7280;white-space:nowrap;vertical-align:top;border-bottom:1px solid #f3f4f6;min-width:90px">${e.date||''}</td>
+      <td style="padding:8px 16px 8px 0;font-family:Arial,sans-serif;font-size:13px;color:#1f2937;line-height:1.5;border-bottom:1px solid #f3f4f6">${(e.text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</td>
     </tr>`).join('');
 
-  const taskRows=openTasks.map(t=>`
-    <tr>
-      <td style="padding:8px 14px;vertical-align:top">
-        <div style="width:18px;height:18px;border:2px solid ${color};border-radius:4px;display:inline-block;flex-shrink:0;margin-top:2px"></div>
-      </td>
-      <td style="padding:8px 4px 8px 0;font-size:13px;color:#1e293b;line-height:1.5;border-bottom:1px solid #f8fafc">
-        ${(t.text||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
-      </td>
-      <td style="padding:8px 14px 8px 8px;white-space:nowrap;border-bottom:1px solid #f8fafc">
-        ${t.owner?`<span style="font-size:11px;font-weight:600;background:${color}22;color:${color};padding:2px 8px;border-radius:20px;border:1px solid ${color}44">${t.owner}</span>`:''}
-      </td>
-    </tr>`).join('');
+  // Segmented action items by owner
+  const ownerSections=Object.keys(byOwner).map(owner=>{
+    const ownerColor=owner==='Anthony'?'#1d4ed8':owner==='Leo'?'#7c3aed':owner==='Cliff'?'#0369a1':owner==='Jose'?'#b45309':owner==='Ray'?'#047857':'#6b7280';
+    const rows=byOwner[owner].map(t=>`
+      <tr>
+        <td width="28" style="padding:8px 8px 8px 14px;vertical-align:middle">
+          <div style="width:16px;height:16px;border:2px solid ${ownerColor};border-radius:3px;display:inline-block"></div>
+        </td>
+        <td style="padding:8px 14px 8px 4px;font-family:Arial,sans-serif;font-size:13px;color:#1f2937;line-height:1.5;border-bottom:1px solid #f9fafb">
+          ${(t.text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+        </td>
+      </tr>`).join('');
+    return`
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:12px;border:1.5px solid ${ownerColor}33;border-radius:8px;overflow:hidden">
+      <tr><td style="background:${ownerColor}11;padding:8px 14px;border-bottom:1.5px solid ${ownerColor}33">
+        <span style="font-family:Arial,sans-serif;font-size:12px;font-weight:700;color:${ownerColor};text-transform:uppercase;letter-spacing:.06em">${owner}</span>
+        <span style="font-family:Arial,sans-serif;font-size:11px;color:${ownerColor}88;margin-left:6px">${byOwner[owner].length} item${byOwner[owner].length!==1?'s':''}</span>
+      </td></tr>
+      ${rows}
+    </table>`;
+  }).join('');
 
   const doneRows=doneTasks.map(t=>`
     <tr>
-      <td style="padding:5px 14px;vertical-align:top">
-        <div style="width:18px;height:18px;background:${color};border-radius:4px;display:inline-block;text-align:center;line-height:18px;font-size:11px;color:white">✓</div>
+      <td width="28" style="padding:5px 8px 5px 14px;vertical-align:middle">
+        <div style="width:16px;height:16px;background:${iusGreen};border-radius:3px;display:inline-block;text-align:center;line-height:16px;font-size:10px;color:white;font-weight:700">✓</div>
       </td>
-      <td style="padding:5px 4px 5px 0;font-size:12px;color:#94a3b8;text-decoration:line-through;line-height:1.4" colspan="2">
-        ${(t.text||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+      <td style="padding:5px 14px 5px 4px;font-family:Arial,sans-serif;font-size:12px;color:#9ca3af;text-decoration:line-through;border-bottom:1px solid #f9fafb">
+        ${(t.text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
       </td>
     </tr>`).join('');
 
-  return`<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,sans-serif">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:24px 0">
+  return`<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 0">
 <tr><td align="center">
-<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.10)">
+<table width="580" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.10)">
 
-  <!-- HEADER -->
-  <tr><td style="background:linear-gradient(135deg,${color},${color}dd);padding:28px 32px 20px">
-    <div style="display:flex;align-items:center;gap:12px">
-      <span style="font-size:32px">${icon}</span>
-      <div>
-        <div style="font-size:22px;font-weight:700;color:#ffffff">${label} Recap</div>
-        <div style="font-size:13px;color:rgba(255,255,255,.75);margin-top:3px">${today}</div>
-      </div>
-    </div>
+  <!-- IUS HEADER BAR -->
+  <tr><td style="background:#1a1a1a;padding:0;height:5px"></td></tr>
+
+  <!-- LOGO + MEETING TITLE HEADER -->
+  <tr><td style="background:${color};padding:28px 32px 24px">
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td style="vertical-align:middle">
+          <div style="font-family:Arial,sans-serif;font-size:24px;font-weight:700;color:#ffffff;letter-spacing:-.3px">${icon} ${label} Recap</div>
+          <div style="font-family:Arial,sans-serif;font-size:13px;color:rgba(255,255,255,0.75);margin-top:4px">${today}</div>
+        </td>
+        <td align="right" style="vertical-align:middle">
+          <img src="${logoUrl}" alt="Innovative Uniform Solutions" height="44" style="display:block;height:44px;width:auto"/>
+        </td>
+      </tr>
+    </table>
   </td></tr>
 
-  ${data.recap?`<!-- SUMMARY -->
-  <tr><td style="padding:0">
-    <div style="background:${color}0d;border-left:4px solid ${color};padding:16px 24px;margin:0">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:${color};margin-bottom:8px">📝 Summary</div>
-      <div style="font-size:14px;color:#1e293b;line-height:1.7">${(data.recap||'').replace(/\n/g,'<br>').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/&lt;br&gt;/g,'<br>')}</div>
-    </div>
-  </td></tr>`:''}
+  <!-- GREEN ACCENT BAR -->
+  <tr><td style="background:${iusGreen};padding:6px 32px">
+    <span style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:.12em;color:#ffffff;text-transform:uppercase">Innovative Uniform Solutions · Internal Meeting Recap</span>
+  </td></tr>
 
-  ${historyRows?`<!-- ACTIVITY -->
-  <tr><td style="padding:24px 32px 0">
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#64748b;margin-bottom:12px">📋 Recent Activity</div>
-    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border-radius:8px;overflow:hidden;border:1px solid #e2e8f0">
+  <!-- BODY -->
+  <tr><td style="padding:28px 32px">
+
+    ${data.recap?`
+    <!-- SUMMARY -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px">
+      <tr><td style="border-left:4px solid ${color};padding:14px 18px;background:#f8f9ff;border-radius:0 8px 8px 0">
+        <div style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:${color};margin-bottom:6px">📝 Summary</div>
+        <div style="font-family:Arial,sans-serif;font-size:14px;color:#1f2937;line-height:1.7">${(data.recap||'').replace(/\n/g,'<br>').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/&lt;br&gt;/g,'<br>')}</div>
+      </td></tr>
+    </table>`:''}
+
+    ${historyRows?`
+    <!-- RECENT ACTIVITY -->
+    <div style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#6b7280;margin-bottom:10px">📋 Recent Activity</div>
+    <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;margin-bottom:24px">
+      <tr style="background:#f9fafb">
+        <td style="padding:8px 16px;font-family:Arial,sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6b7280">Date</td>
+        <td style="padding:8px 16px 8px 0;font-family:Arial,sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6b7280">Note</td>
+      </tr>
       ${historyRows}
-    </table>
-  </td></tr>`:''}
+    </table>`:''}
 
-  ${openTasks.length?`<!-- ACTION ITEMS -->
-  <tr><td style="padding:24px 32px 0">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:${color}">✅ Action Items (${openTasks.length} open)</div>
-    </div>
-    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border-radius:8px;overflow:hidden;border:1.5px solid ${color}33">
-      ${taskRows}
-    </table>
-  </td></tr>`:''}
+    ${openTasks.length?`
+    <!-- ACTION ITEMS -->
+    <div style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#6b7280;margin-bottom:12px">✅ Action Items <span style="color:${color}">${openTasks.length} Open</span></div>
+    ${ownerSections}
+    <div style="height:12px"></div>`:''}
 
-  ${doneTasks.length?`<!-- COMPLETED -->
-  <tr><td style="padding:16px 32px 0">
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;margin-bottom:8px">Completed</div>
-    <table width="100%" cellpadding="0" cellspacing="0">
+    ${doneTasks.length?`
+    <!-- COMPLETED -->
+    <div style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#9ca3af;margin-bottom:8px">Completed (${doneTasks.length})</div>
+    <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #f3f4f6;border-radius:8px;overflow:hidden;margin-bottom:24px">
       ${doneRows}
-    </table>
-  </td></tr>`:''}
+    </table>`:''}
+
+  </td></tr>
 
   <!-- FOOTER -->
-  <tr><td style="padding:24px 32px;margin-top:16px">
-    <div style="border-top:1px solid #e2e8f0;padding-top:16px;text-align:center">
-      <div style="font-size:11px;color:#94a3b8">IUniform Solutions Workspace · Generated ${today}</div>
-    </div>
+  <tr><td style="background:#f9fafb;padding:18px 32px;border-top:1px solid #e5e7eb">
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td style="font-family:Arial,sans-serif;font-size:11px;color:#9ca3af">
+          <span style="font-weight:700;color:${iusGreen}">Innovative Uniform Solutions</span> · Internal Workspace
+        </td>
+        <td align="right" style="font-family:Arial,sans-serif;font-size:11px;color:#9ca3af">Generated ${today}</td>
+      </tr>
+    </table>
   </td></tr>
 
-</table></td></tr></table>
+  <!-- BOTTOM ACCENT BAR -->
+  <tr><td style="background:${iusGreen};height:4px"></td></tr>
+
+</table>
+</td></tr>
+</table>
 </body></html>`;
-}
-function copyRoomRecap(mid){
-  navigator.clipboard.writeText(buildRoomRecap(mid)).then(()=>showToast('Recap copied!'));
-}
-function previewRoomRecap(mid){
-  const text=buildRoomRecap(mid);
-  const div=document.createElement('div');
-  div.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:500;display:flex;align-items:center;justify-content:center';
-  div.innerHTML=`<div style="background:var(--surface);border-radius:var(--radius);padding:24px;width:560px;max-height:80vh;display:flex;flex-direction:column;gap:12px;box-shadow:0 12px 40px rgba(0,0,0,.2)">
-    <div style="display:flex;align-items:center;gap:10px"><span style="font-size:14px;font-weight:600;flex:1">Recap Preview</span><button class="btn sm" onclick="this.closest('[style*=fixed]').remove()">✕</button></div>
-    <pre style="flex:1;overflow-y:auto;font-size:12px;font-family:var(--mono);background:var(--bg);padding:12px;border-radius:var(--radius-sm);white-space:pre-wrap;line-height:1.6;max-height:50vh">${esc(text)}</pre>
-    <div style="display:flex;gap:8px">
-      <button class="btn dark" onclick="copyRoomRecap('${mid}');this.closest('[style*=fixed]').remove()">⎘ Copy</button>
-      <button class="btn" onclick="sendRoomEmail('${mid}')">✉ Send Email</button>
-    </div>
-  </div>`;
-  document.body.appendChild(div);
 }
 function sendRoomEmail(mid){
   initMeetingTypes();
