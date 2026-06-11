@@ -2254,28 +2254,13 @@ function deleteMeetingType(id){
 const mtgDrafts={}; // {mid: {text, date}}
 const mtgTaskDrafts={}; // {mid: taskInputText}
 
-// Call this before any re-render that would wipe the textarea
+// saveMtgDraft saves before any re-render
 function saveMtgDraft(mid){
   const ta=document.getElementById('roomEntry_'+mid);
   const dateEl=document.getElementById('roomEntryDate_'+mid);
   const taskInp=document.getElementById('roomNewTask_'+mid);
   if(ta||dateEl)mtgDrafts[mid]={text:ta?ta.value:'',date:dateEl?dateEl.value:new Date().toISOString().slice(0,10)};
   if(taskInp)mtgTaskDrafts[mid]=taskInp.value;
-}
-// Call after render to restore draft
-function restoreMtgDraft(mid){
-  const draft=mtgDrafts[mid];
-  if(draft){
-    const ta=document.getElementById('roomEntry_'+mid);
-    const dateEl=document.getElementById('roomEntryDate_'+mid);
-    if(ta&&draft.text)ta.value=draft.text;
-    if(dateEl&&draft.date)dateEl.value=draft.date;
-  }
-  const taskDraft=mtgTaskDrafts[mid];
-  if(taskDraft){
-    const taskInp=document.getElementById('roomNewTask_'+mid);
-    if(taskInp)taskInp.value=taskDraft;
-  }
 }
 
 function toggleRoomAttendee(mid,name){
@@ -2296,8 +2281,9 @@ function addRoomEntry(mid){
   const data=state.meetingData[mid];if(!data)return;
   if(!data.history)data.history=[];
   data.history.push({text,date:dateEl?dateEl.value:(mtgDrafts[mid]?mtgDrafts[mid].date:new Date().toISOString().slice(0,10))});
-  // Clear drafts after save
+  // Clear draft from memory AND localStorage so it doesn't reappear after tab switch
   delete mtgDrafts[mid];
+  try{localStorage.removeItem('ws_mtg_draft_'+mid);}catch(e){}
   if(ta)ta.value='';
   scheduleSave();renderMeetings();
   setTimeout(()=>{
@@ -2319,13 +2305,13 @@ function addRoomTask(mid){
   delete mtgTaskDrafts[mid];
   if(inp)inp.value='';
   scheduleSave();renderMeetings();
-  restoreMtgDraft(mid);
+  setTimeout(()=>restoreMtgDraft(mid),30);
 }
 function toggleRoomTask(mid,i){
   saveMtgDraft(mid);
   const data=state.meetingData[mid];if(!data||!data.tasks[i])return;
   data.tasks[i].done=!data.tasks[i].done;scheduleSave();renderMeetings();
-  restoreMtgDraft(mid);
+  setTimeout(()=>restoreMtgDraft(mid),30);
 }
 function updateRoomTask(mid,i,field,val){
   const data=state.meetingData[mid];if(!data||!data.tasks[i])return;
@@ -2333,6 +2319,7 @@ function updateRoomTask(mid,i,field,val){
   data.tasks[i][field]=val;scheduleSave();
 }
 function assignRoomTask(mid,i,pid){
+  saveMtgDraft(mid);
   const data=state.meetingData[mid];if(!data||!data.tasks[i])return;
   data.tasks[i].projId=pid;
   if(pid){
@@ -2346,11 +2333,14 @@ function assignRoomTask(mid,i,pid){
       showToast('Added to '+p.name);
     }
   }
-  scheduleSave();
+  scheduleSave();renderMeetings();
+  setTimeout(()=>restoreMtgDraft(mid),30);
 }
 function removeRoomTask(mid,i){
+  saveMtgDraft(mid);
   const data=state.meetingData[mid];if(!data)return;
   data.tasks.splice(i,1);scheduleSave();renderMeetings();
+  setTimeout(()=>restoreMtgDraft(mid),30);
 }
 function updateRoomRecap(mid,val){
   const data=state.meetingData[mid];if(!data)return;
@@ -2360,7 +2350,30 @@ function addOwner(){
   const name=prompt('Enter name:');if(!name||!name.trim())return;
   if(!state.extraOwners)state.extraOwners=[];
   if(!state.extraOwners.includes(name.trim()))state.extraOwners.push(name.trim());
+  if(activeMeeting)saveMtgDraft(activeMeeting);
   scheduleSave();renderMeetings();
+  if(activeMeeting)setTimeout(()=>restoreMtgDraft(activeMeeting),30);
+}
+
+// Robust draft restore — tries immediately and retries once if element not found
+function restoreMtgDraft(mid){
+  const draft=mtgDrafts[mid];
+  if(draft){
+    const ta=document.getElementById('roomEntry_'+mid);
+    const dateEl=document.getElementById('roomEntryDate_'+mid);
+    if(ta&&draft.text!==undefined)ta.value=draft.text;
+    if(dateEl&&draft.date)dateEl.value=draft.date;
+    // If textarea not found yet, retry after another tick
+    if(!ta&&draft.text)setTimeout(()=>{
+      const ta2=document.getElementById('roomEntry_'+mid);
+      if(ta2&&draft.text!==undefined)ta2.value=draft.text;
+    },80);
+  }
+  const taskDraft=mtgTaskDrafts[mid];
+  if(taskDraft){
+    const taskInp=document.getElementById('roomNewTask_'+mid);
+    if(taskInp)taskInp.value=taskDraft;
+  }
 }
 function buildRoomRecap(mid){
   initMeetingTypes();
@@ -2930,7 +2943,7 @@ function navToTask(pid,ph,tid){
   },80);
 }
 
-// Mark all subtasks done + archive the task
+// Mark all subtasks done + archive the task, create next recurrence
 function calDoneAll(pid,ph,tid){
   const p=state.projects.find(pr=>pr.id===pid);if(!p)return;
   const t=(p.tasks[ph]||[]).find(t=>t.id===tid);if(!t)return;
@@ -2939,14 +2952,45 @@ function calDoneAll(pid,ph,tid){
   if(!p.archive)p.archive=[];
   p.archive.push({...t,archivedAt:Date.now(),archivedFrom:ph});
   p.tasks[ph]=(p.tasks[ph]||[]).filter(x=>x.id!==tid);
+
   if(t.recur){
-    const next={...t,id:'t'+Date.now(),done:false,doneAt:0};
-    delete next.archivedAt;delete next.archivedFrom;
-    next.due=t.recur==='daily'?'today':'week';
-    p.tasks[ph].push(next);
+    // Calculate next scheduled date based on recur frequency
+    const base=t.scheduledDate?new Date(t.scheduledDate+'T00:00:00'):new Date();
+    const next=new Date(base);
+    if(t.recur==='daily')      next.setDate(next.getDate()+1);
+    else if(t.recur==='weekly')next.setDate(next.getDate()+7);
+    else if(t.recur==='monthly')next.setMonth(next.getMonth()+1);
+    else if(t.recur==='weekdays'){
+      next.setDate(next.getDate()+1);
+      while(next.getDay()===0||next.getDay()===6)next.setDate(next.getDate()+1);
+    } else next.setDate(next.getDate()+7); // default weekly
+
+    const nextDate=next.toISOString().slice(0,10);
+
+    // Determine due bucket from next date
+    const today=new Date();today.setHours(0,0,0,0);
+    const diffDays=Math.round((next-today)/(1000*60*60*24));
+    let nextDue;
+    if(diffDays<=0)nextDue='today';
+    else if(diffDays<=6)nextDue='week';
+    else if(diffDays<=30)nextDue='someday';
+    else nextDue='none';
+
+    const nextTask={
+      ...t,
+      id:'t'+Date.now()+'r',
+      done:false,doneAt:0,
+      scheduledDate:nextDate,
+      due:nextDue,
+      subtasks:(t.subtasks||[]).map(s=>({...s,done:false})) // reset subtasks
+    };
+    delete nextTask.archivedAt;delete nextTask.archivedFrom;
+    p.tasks[ph].push(nextTask);
+    showToast('Recurring task moved to '+nextDate);
+  } else {
+    showToast('Task completed & archived');
   }
   scheduleSave();renderCalendar();renderWeekStrip();
-  showToast('Task completed & archived');
 }
 
 // Delete task from calendar without archiving
@@ -3189,11 +3233,10 @@ function pushToSheet(){
   // Dedup everything before saving
   state.projects.forEach(p=>{
     p.phases.forEach(ph=>{
-      const seenId=new Set(),seenText=new Set();
+      const seenId=new Set();
+      // Only dedup by ID — do NOT dedup by text (recurring tasks have same text)
       p.tasks[ph]=(p.tasks[ph]||[]).filter(t=>{
         if(seenId.has(t.id))return false; seenId.add(t.id);
-        const k=(t.text||'').trim().toLowerCase();
-        if(seenText.has(k))return false; seenText.add(k);
         const seenSub=new Set();
         t.subtasks=(t.subtasks||[]).filter(s=>{
           const sk=(s.text||'').trim().toLowerCase();
@@ -3270,12 +3313,10 @@ function pushToSheet(){
 }
 
 function dedupePhase(tasks){
-  const seenId=new Set(),seenText=new Set();
+  // Only deduplicate by ID — NOT by text (recurring tasks intentionally share text)
+  const seenId=new Set();
   return (tasks||[]).filter(t=>{
     if(seenId.has(t.id))return false; seenId.add(t.id);
-    const k=(t.text||'').trim().toLowerCase().replace(/\s+/g,' ');
-    if(seenText.has(k))return false; seenText.add(k);
-    // Also dedup subtasks
     const seenSub=new Set();
     t.subtasks=(t.subtasks||[]).filter(s=>{
       const sk=(s.text||'').trim().toLowerCase();
@@ -3325,6 +3366,8 @@ function normalizeProjects(projects){
         if(t.subsCollapsed===undefined)t.subsCollapsed=false;
         if(!t.due)t.due='none';
         if(!t.doneAt)t.doneAt=0;
+        if(t.recur===undefined)t.recur=null;
+        if(!t.scheduledDate)t.scheduledDate='';
         // Dedup subtasks on load
         if(t.subtasks&&t.subtasks.length>1){
           const seenSub=new Set();
@@ -3481,7 +3524,13 @@ document.addEventListener('visibilitychange',()=>{
       saveMtgDraft(activeMeeting);
       try{
         const d=mtgDrafts[activeMeeting];
-        if(d&&d.text)localStorage.setItem('ws_mtg_draft_'+activeMeeting,JSON.stringify(d));
+        // Only persist if there's actual unsaved text
+        if(d&&d.text&&d.text.trim()){
+          localStorage.setItem('ws_mtg_draft_'+activeMeeting,JSON.stringify(d));
+        } else {
+          // No text — clear any stale stored draft
+          localStorage.removeItem('ws_mtg_draft_'+activeMeeting);
+        }
       }catch(e){}
     }
     if(scriptUrl&&state.projects.length){
@@ -3496,16 +3545,21 @@ document.addEventListener('visibilitychange',()=>{
     window._hiddenAt=Date.now();
   }
   if(document.visibilityState==='visible'&&scriptUrl){
-    // Restore meeting draft from localStorage
+    // Restore meeting draft from localStorage only if non-empty
     if(activeMeeting){
       try{
         const stored=localStorage.getItem('ws_mtg_draft_'+activeMeeting);
-        if(stored){const d=JSON.parse(stored);if(d)mtgDrafts[activeMeeting]=d;}
+        if(stored){
+          const d=JSON.parse(stored);
+          // Only restore if there's actual text content
+          if(d&&d.text&&d.text.trim()){
+            mtgDrafts[activeMeeting]=d;
+          }
+        }
       }catch(e){}
-      // Restore into the textarea if meetings tab is active
       if(mainTab==='meetings'){
         setTimeout(()=>restoreMtgDraft(activeMeeting),100);
-        return; // don't trigger reload if we're on meetings tab
+        return;
       }
     }
     const hiddenFor=Date.now()-(window._hiddenAt||Date.now());
