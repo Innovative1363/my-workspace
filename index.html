@@ -3226,6 +3226,9 @@ function scheduleSave(){
   saveTimer=setTimeout(pushToSheet,2500);
 }
 
+let _saveRetries=0;
+const _maxSaveRetries=3;
+
 function pushToSheet(){
   if(!scriptUrl||_isSaving)return;
   if(!state.projects||state.projects.length===0){setSyncBadge('err');return;}
@@ -3234,7 +3237,6 @@ function pushToSheet(){
   state.projects.forEach(p=>{
     p.phases.forEach(ph=>{
       const seenId=new Set();
-      // Only dedup by ID — do NOT dedup by text (recurring tasks have same text)
       p.tasks[ph]=(p.tasks[ph]||[]).filter(t=>{
         if(seenId.has(t.id))return false; seenId.add(t.id);
         const seenSub=new Set();
@@ -3268,45 +3270,42 @@ function pushToSheet(){
     version:ver,tabId:_tabId,savedAt:Date.now()
   });
 
-  // Use regular fetch (no no-cors) — Apps Script returns JSON we can read
-  const controller=typeof AbortController!=='undefined'?new AbortController():null;
-  const to=controller?setTimeout(()=>controller.abort(),50000):null;
+  // Always backup to localStorage first
+  try{localStorage.setItem('ws_local_backup',JSON.stringify({
+    projects:state.projects,meetings:state.meetings||[],
+    meetingTypes:state.meetingTypes||[],meetingData:state.meetingData||{},
+    savedAt:Date.now(),version:ver
+  }));}catch(e){}
 
-  fetch(scriptUrl,{
-    method:'POST',
-    body,
-    ...(controller?{signal:controller.signal}:{})
-  })
+  const controller=typeof AbortController!=='undefined'?new AbortController():null;
+  const to=controller?setTimeout(()=>controller.abort(),45000):null;
+
+  fetch(scriptUrl,{method:'POST',body,...(controller?{signal:controller.signal}:{})})
   .then(r=>r.text())
   .then(txt=>{
     if(to)clearTimeout(to);
-    _isSaving=false;
+    _isSaving=false;_saveRetries=0;
     let res={};
-    try{res=JSON.parse(txt);}catch(e){res={ok:true};} // if we got a response, treat as ok
+    try{res=JSON.parse(txt);}catch(e){res={ok:true};}
     if(res.error&&!res.ok){
       setSyncBadge('err');
-      showToast('Save error: '+res.error);
-      setTimeout(pushToSheet,10000);
+      showToast('Save error: '+res.error.slice(0,80));
+      // No auto-retry on server errors — user must manually retry
     } else {
-      setSyncBadge('ok');
-      _sheetsVersion=ver;
+      setSyncBadge('ok');_sheetsVersion=ver;
       try{localStorage.setItem('ws_last_save',JSON.stringify({tabId:_tabId,version:ver,t:Date.now()}));}catch(e){}
     }
   })
   .catch(err=>{
     if(to)clearTimeout(to);
     _isSaving=false;
-    // CORS error from Apps Script is normal — if fetch resolves/rejects we still got through
-    // Apps Script doesn't send CORS headers, so treat network errors as "probably saved"
     if(err.name==='AbortError'){
       setSyncBadge('err');
-      showToast('Save timed out — retrying in 15s');
-      setTimeout(pushToSheet,15000);
+      showToast('Save timed out — click sync error to retry');
+      // No auto-retry — user manually retries via badge click
     } else {
-      // TypeError: Failed to fetch = CORS block — but the POST was likely received
-      // Mark as ok and rely on next load to verify
-      setSyncBadge('ok');
-      _sheetsVersion=ver;
+      // CORS block = request went through, treat as ok
+      setSyncBadge('ok');_sheetsVersion=ver;_saveRetries=0;
       try{localStorage.setItem('ws_last_save',JSON.stringify({tabId:_tabId,version:ver,t:Date.now()}));}catch(e){}
     }
   });
