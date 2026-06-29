@@ -406,7 +406,48 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 .cal-section-head{font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:5px}
 .cal-section-body{display:flex;flex-direction:column}
 /* SUBTASK INDENT FIX — handled in main CSS above */
-/* PHASE ACCORDION */
+/* TWO-COLUMN TASK GRID */
+.task-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px;align-items:start}
+.task-block{margin-bottom:8px;break-inside:avoid;position:relative}
+.task-block-row{display:flex;align-items:flex-start;gap:6px;padding:4px 6px;border-radius:var(--radius-sm);cursor:pointer;transition:background .1s}
+.task-block-row:hover{background:var(--surface2)}
+.task-block-row.sub-open{background:var(--surface2);border-radius:var(--radius-sm) var(--radius-sm) 0 0}
+.task-block-row.editing-name{background:#fff8e6;border-radius:var(--radius-sm) var(--radius-sm) 0 0}
+body.dark .task-block-row.editing-name{background:var(--hl-bg)}
+.tblock-num{font-size:10px;font-weight:600;color:var(--text3);min-width:18px;flex-shrink:0;margin-top:3px}
+.tblock-cb{cursor:pointer;flex-shrink:0;accent-color:var(--accent);width:14px;height:14px;margin-top:3px}
+.tblock-text{font-size:13px;color:var(--text);flex:1;line-height:1.45;word-break:break-word;user-select:text}
+.tblock-text.done{text-decoration:line-through;color:var(--text3)}
+.tblock-edit{font-size:13px;font-family:var(--font);color:var(--text);border:none;background:none;outline:none;flex:1;line-height:1.45}
+.tblock-due{font-size:9px;padding:1px 5px;border-radius:4px;font-weight:500;flex-shrink:0;margin-top:3px}
+.tblock-due.due-today{background:#fde8e8;color:#b91c1c}
+.tblock-due.due-week{background:#fef3c7;color:#92400e}
+.tblock-due.due-someday{background:var(--surface2);color:var(--text3)}
+body.dark .tblock-due.due-today{background:#3d0a0a;color:#f87171}
+body.dark .tblock-due.due-week{background:#2a1f00;color:#fbbf24}
+/* INLINE SUBTASK LIST */
+.tblock-subs{border-left:2px solid var(--border-md);margin-left:10px;padding-left:10px;margin-top:2px}
+.tblock-sub-row{display:flex;align-items:center;gap:5px;padding:2px 0;border-bottom:0.5px solid var(--border)}
+.tblock-sub-row:last-child{border-bottom:none}
+.tblock-sub-cb{cursor:pointer;width:11px;height:11px;flex-shrink:0;accent-color:var(--accent)}
+.tblock-sub-num{font-size:10px;color:var(--text3);min-width:14px;flex-shrink:0}
+.tblock-sub-text{font-size:11.5px;color:var(--text2);flex:1;line-height:1.35}
+.tblock-sub-text.done{text-decoration:line-through;color:var(--text3)}
+.tblock-sub-del{background:none;border:none;cursor:pointer;color:var(--text3);font-size:11px;opacity:0;padding:0 2px;font-family:var(--font);line-height:1}
+.tblock-sub-row:hover .tblock-sub-del{opacity:1}
+/* SUBTASK ADD INPUT */
+.tblock-sub-add{display:flex;align-items:center;gap:5px;padding:4px 0 2px;margin-left:10px;border-left:2px solid var(--border-strong);padding-left:10px}
+.tblock-sub-inp{flex:1;font-size:11.5px;padding:3px 7px;border-radius:var(--radius-sm);border:1px solid var(--border-strong);background:var(--bg);color:var(--text);font-family:var(--font);outline:none}
+.tblock-sub-inp:focus{border-color:var(--accent)}
+/* HINT TEXT */
+.tblock-hint{font-size:9.5px;color:var(--text3);padding:2px 6px;opacity:.55;margin-left:10px}
+/* DONE SECTION */
+.task-grid-done-divider{grid-column:1/-1;border-top:1px dashed var(--border);margin:8px 0 6px;padding-top:4px;display:flex;align-items:center;gap:8px}
+.task-grid-done-label{font-size:10px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;color:var(--text3)}
+/* FLOATING ADD BAR */
+.float-add-bar{position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--border-md);padding:8px 0 4px;display:flex;gap:8px;align-items:center;z-index:10;flex-shrink:0}
+.float-add-inp{flex:1;font-size:14px;padding:8px 12px;border-radius:var(--radius);border:1px solid var(--border-md);background:var(--surface);color:var(--text);font-family:var(--font);outline:none}
+.float-add-inp:focus{border-color:var(--border-strong)}
 .phase-progress{height:3px;border-radius:2px;background:var(--border-md);margin-top:4px;overflow:hidden}
 .phase-progress-fill{height:3px;border-radius:2px;background:#1D9E75;transition:width .3s}
 /* DONE TASK — collapsed to one line at bottom */
@@ -525,7 +566,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
             <div id="importPreview"></div>
           </div>
         </div>
-        <div class="add-row">
+        <div class="add-row" style="display:none">
           <input class="add-inp" id="taskInput" placeholder="Add a task and press Enter..." onkeydown="handleAddKey(event)"/>
           <div class="type-toggle">
             <button class="type-btn active-task" id="typeTask" onclick="setAddType('task')">☑ Task</button>
@@ -902,7 +943,7 @@ function render(){
   renderPhases(p);
   if(mainTab==='tasks')renderTasks(p);
   else if(mainTab==='calendar')renderCalendar();
-  else if(mainTab==='meetings'){renderMeetings();if(activeMeeting)setTimeout(()=>restoreMtgDraft(activeMeeting),30);}
+  else if(mainTab==='meetings'){renderMeetings();if(activeMeeting)setTimeout(()=>{restoreMtgDraft(activeMeeting);renderLiveBullets(activeMeeting);},50);}
   else if(mainTab==='archive')renderArchive();
   renderNotes(p);
   if(scriptUrl){const ui=document.getElementById('urlInput');if(ui)ui.value=scriptUrl;}
@@ -989,30 +1030,23 @@ function renderTasks(p){
   const list=document.getElementById('taskList');
   if(!list)return;
 
-  // Separate done vs active tasks
   const active=allItems.filter(t=>!t.done);
   const done=allItems.filter(t=>t.done);
   const highlighted=active.filter(t=>t.highlighted);
   const regular=active.filter(t=>!t.highlighted);
 
   document.getElementById('panelLabel').textContent='Tasks & Questions';
-
-  // Update phase chips to show progress bars (enhance existing chips)
   updatePhaseProgressBars(p);
 
-  // Progress for current phase
   const total=allItems.length;
   const doneCount=done.length;
   const pct=total?Math.round(doneCount/total*100):0;
 
-  let html='';
-
-  // Import Claude list button
-  html+=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+  let html=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-shrink:0">
     <div style="font-size:11px;color:var(--text3)">${total?`${doneCount}/${total} done · ${pct}%`:''}</div>
-    <button class="import-claude-btn" onclick="toggleImportClaude()" title="Paste a numbered list from Claude to add as tasks">⊕ Import Claude list</button>
+    <button class="import-claude-btn" onclick="toggleImportClaude()">⊕ Import Claude list</button>
   </div>
-  <div id="importClaudePanel" style="display:none;margin-bottom:8px">
+  <div id="importClaudePanel" style="display:none;margin-bottom:8px;flex-shrink:0">
     <textarea id="importClaudeTa" placeholder="Paste numbered list from Claude here..." style="width:100%;font-size:12.5px;padding:8px 10px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg);color:var(--text);font-family:var(--font);outline:none;resize:none;min-height:80px;line-height:1.5"></textarea>
     <div style="display:flex;gap:6px;margin-top:5px">
       <button class="btn dark sm" onclick="importClaudeList()">Add to this phase</button>
@@ -1020,22 +1054,154 @@ function renderTasks(p){
     </div>
   </div>`;
 
+  // Two-column grid
+  html+=`<div class="task-grid" style="flex:1;overflow-y:auto;min-height:0;padding-bottom:4px">`;
+
   if(highlighted.length){
-    html+=`<div class="highlights-section"><div class="highlights-header">★ Highlights</div>${highlighted.map((t,i)=>renderTaskCard(t,false,i+1)).join('')}</div>`;
+    html+=`<div style="grid-column:1/-1;font-size:10px;font-weight:600;color:#9a8a10;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">★ Highlights</div>`;
+    html+=highlighted.map((t,i)=>renderTaskBlock(t,i+1)).join('');
   }
 
-  html+=regular.length?regular.map((t,i)=>renderTaskCard(t,false,highlighted.length+i+1)).join('')
-    :`<div class="empty">No tasks yet — add one above</div>`;
+  if(regular.length){
+    html+=regular.map((t,i)=>renderTaskBlock(t,highlighted.length+i+1)).join('');
+  } else if(!highlighted.length){
+    html+=`<div class="empty" style="grid-column:1/-1">No tasks yet — add one below</div>`;
+  }
 
-  // Done tasks collapsed at bottom
   if(done.length){
-    html+=`<div style="margin-top:8px;border-top:1px dashed var(--border);padding-top:6px">
-      <div style="font-size:10px;color:var(--text3);font-weight:500;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Completed (${done.length})</div>
-      ${done.map(t=>renderDoneCollapsed(t)).join('')}
-    </div>`;
+    html+=`<div class="task-grid-done-divider"><span class="task-grid-done-label">Completed (${done.length})</span></div>`;
+    html+=done.map(t=>renderDoneCollapsed(t)).join('');
   }
+
+  html+=`</div>`;
+
+  // Floating add bar — sticky at bottom
+  html+=`<div class="float-add-bar">
+    <input class="float-add-inp" id="mainAddInp" placeholder="Add a task and press Enter…"
+      onkeydown="if(event.key==='Enter')addTaskFromFloat()"
+      onclick="event.stopPropagation()"/>
+    <button class="type-btn ${addType==='task'?'active-task':''}" onclick="addType='task';renderTasks(getProj())" title="Task">☑ Task</button>
+    <button class="type-btn ${addType==='question'?'active-question':''}" onclick="addType='question';renderTasks(getProj())" title="Question">? Q</button>
+    <button class="btn dark sm" onclick="addTaskFromFloat()" style="flex-shrink:0">+ Add</button>
+  </div>`;
 
   list.innerHTML=html;
+  list.style.display='flex';
+  list.style.flexDirection='column';
+  list.style.overflow='hidden';
+}
+
+function addTaskFromFloat(){
+  const inp=document.getElementById('mainAddInp');
+  if(!inp)return;
+  const v=inp.value.trim();if(!v)return;
+  const p=getProj();if(!p)return;
+  const ph=getPhaseKey();if(!ph)return;
+  if(!p.tasks[ph])p.tasks[ph]=[];
+  p.tasks[ph].push({id:'t'+Date.now(),text:v,type:addType||'task',done:false,highlighted:false,
+    subtasks:[],note:'',files:[],badge:'none',due:'none',subsCollapsed:false,doneAt:0,recur:null,scheduledDate:''});
+  inp.value='';
+  scheduleSave();renderTasks(p);renderPhases(p);
+  // Refocus the input
+  setTimeout(()=>{const i=document.getElementById('mainAddInp');if(i)i.focus();},30);
+}
+
+// Render a single task block in the two-column grid
+function renderTaskBlock(t,stepNum){
+  const subs=t.subtasks||[];
+  const isEditing=editingTask===t.id;
+  const subOpen=expandedTasks[t.id]; // reuse expandedTasks for sub-input open state
+  const dueClass=t.due==='today'?'due-today':t.due==='week'?'due-week':t.due==='someday'?'due-someday':'';
+  const DUE_SHORT={today:'Today',week:'This week',someday:'Someday',none:''};
+
+  const subRows=subs.map((s,si)=>`
+    <div class="tblock-sub-row">
+      <input type="checkbox" class="tblock-sub-cb" ${s.done?'checked':''} onchange="toggleSub('${t.id}','${s.id}')" onclick="event.stopPropagation()"/>
+      <span class="tblock-sub-num">${String.fromCharCode(97+si)}.</span>
+      <span class="tblock-sub-text ${s.done?'done':''}" ondblclick="startEditSub('${s.id}');event.stopPropagation()">${esc(s.text)}</span>
+      <button class="tblock-sub-del" onclick="delSub('${t.id}','${s.id}');event.stopPropagation()">×</button>
+    </div>`).join('');
+
+  const subAddRow=subOpen?`<div class="tblock-sub-add">
+    <span class="tblock-sub-num" style="color:var(--text2)">+</span>
+    <input class="tblock-sub-inp" id="subinp_${t.id}" placeholder="Add subtask… Enter to save"
+      onkeydown="handleBlockSubKey(event,'${t.id}')"
+      onclick="event.stopPropagation()"
+      onblur="closeSubInput('${t.id}')"/>
+  </div>`:'';
+
+  const hint=subOpen?'':`<div class="tblock-hint">click to add subtask · double-click text to edit</div>`;
+
+  return`<div class="task-block" id="tc_${t.id}"
+    oncontextmenu="showTaskCtx(event,'${t.id}')"
+    ondragover="dragOver(event,'${t.id}')" ondrop="dragDrop(event,'${t.id}')" ondragleave="dragLeave(event,'${t.id}')">
+    <div class="task-block-row ${subOpen?'sub-open':''} ${isEditing?'editing-name':''}"
+      onclick="handleBlockClick(event,'${t.id}')"
+      draggable="true" ondragstart="dragStart(event,'${t.id}')">
+      <input type="checkbox" class="tblock-cb" ${t.done?'checked':''} onchange="toggleTask('${t.id}')" onclick="event.stopPropagation()"/>
+      <span class="tblock-num">${stepNum}.</span>
+      ${isEditing
+        ?`<input class="tblock-edit" id="edit_${t.id}" value="${esc(t.text)}"
+            onblur="saveTaskEdit('${t.id}',this.value)"
+            onkeydown="if(event.key==='Enter')saveTaskEdit('${t.id}',this.value);if(event.key==='Escape'){editingTask=null;renderTasks(getProj())}"
+            onclick="event.stopPropagation()"/>`
+        :`<span class="tblock-text ${t.done?'done':''}"
+            ondblclick="startEditTask('${t.id}');event.stopPropagation()">${linkify(t.text)}</span>`
+      }
+      ${t.highlighted?`<span style="color:#c9a800;font-size:12px;flex-shrink:0">★</span>`:''}
+      ${t.due&&t.due!=='none'?`<span class="tblock-due ${dueClass}">${DUE_SHORT[t.due]||''}</span>`:''}
+    </div>
+    ${subs.length||subOpen?`<div class="tblock-subs">${subRows}${subAddRow}</div>`:''}
+    ${subOpen?'':hint}
+  </div>`;
+}
+
+function handleBlockClick(event,id){
+  // Single click = toggle subtask input open/closed
+  // Double-click fires dblclick on the text span, not here
+  if(event.target.classList.contains('tblock-cb'))return;
+  if(event.target.classList.contains('tblock-text'))return; // let dblclick handle
+  const wasOpen=expandedTasks[id];
+  // Close all others first
+  Object.keys(expandedTasks).forEach(k=>delete expandedTasks[k]);
+  if(!wasOpen){
+    expandedTasks[id]=true;
+  }
+  const p=getProj();if(p)renderTasks(p);
+  if(expandedTasks[id]){
+    setTimeout(()=>{const inp=document.getElementById('subinp_'+id);if(inp)inp.focus();},30);
+  }
+}
+
+function handleBlockSubKey(event,tid){
+  if(event.key==='Enter'){
+    const inp=event.target;
+    const v=inp.value.trim();if(!v)return;
+    const p=getProj();if(!p)return;
+    const ph=findTaskPhase(tid)||getPhaseKey();
+    const t=(p.tasks[ph]||[]).find(t=>t.id===tid);if(!t)return;
+    if(!t.subtasks)t.subtasks=[];
+    t.subtasks.push({id:'s'+Date.now(),text:v,done:false});
+    inp.value='';
+    scheduleSave();
+    // Re-render but keep input open
+    expandedTasks[tid]=true;
+    renderTasks(p);
+    setTimeout(()=>{const i=document.getElementById('subinp_'+tid);if(i)i.focus();},30);
+  }
+  if(event.key==='Escape'){
+    delete expandedTasks[event.target.closest('.task-block')?event.target.closest('.task-block').id.replace('tc_',''):tid];
+    closeSubInput(tid);
+  }
+}
+
+function closeSubInput(tid){
+  // Small delay so click events on subtask rows fire first
+  setTimeout(()=>{
+    if(document.activeElement&&document.activeElement.id==='subinp_'+tid)return;
+    delete expandedTasks[tid];
+    const p=getProj();if(p)renderTasks(p);
+  },150);
 }
 
 // Add progress bars to existing phase chips without replacing them
@@ -1066,14 +1232,12 @@ function updatePhaseProgressBars(p){
 }
 
 function renderDoneCollapsed(t){
-  const subTotal=(t.subtasks||[]).length;
-  const subDone=(t.subtasks||[]).filter(s=>s.done).length;
-  return`<div class="task-card task-done-collapsed" id="tc_${t.id}">
-    <div class="task-done-line">
-      <input type="checkbox" class="task-cb" checked onchange="toggleTask('${t.id}')" onclick="event.stopPropagation()" title="Unmark as done"/>
-      <span class="done-text" title="${esc(t.text)}">${esc(t.text)}</span>
-      ${subTotal?`<span style="font-size:10px;color:var(--text3)">${subDone}/${subTotal}</span>`:''}
-      <button class="icon-btn" onclick="delTask('${t.id}');event.stopPropagation()" title="Delete" style="opacity:.5">×</button>
+  return`<div class="task-block" id="tc_${t.id}" style="opacity:.42">
+    <div class="task-block-row">
+      <input type="checkbox" class="tblock-cb" checked onchange="toggleTask('${t.id}')" onclick="event.stopPropagation()"/>
+      <span class="tblock-num" style="color:var(--text3)">—</span>
+      <span class="tblock-text done" style="font-size:12px">${esc(t.text)}</span>
+      <button class="icon-btn" onclick="delTask('${t.id}');event.stopPropagation()" style="opacity:.5;font-size:11px">×</button>
     </div>
   </div>`;
 }
@@ -1958,7 +2122,7 @@ function switchMainTab(tab){
       renderMeetings();
       // Restore draft after render completes
       if(activeMeeting){
-        setTimeout(()=>restoreMtgDraft(activeMeeting),50);
+        setTimeout(()=>{restoreMtgDraft(activeMeeting);renderLiveBullets(activeMeeting);},50);
       }
     }
     if(arcPanel)arcPanel.style.display='none';
@@ -2062,14 +2226,34 @@ function renderMeetingRoom(mt){
     return`<button onclick="toggleRoomAttendee('${mt.id}','${a.name}')" title="${a.email}" style="padding:4px 11px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1.5px solid ${sel?mt.color:'var(--border-md)'};background:${sel?mt.color:'var(--surface)'};color:${sel?'#fff':'var(--text2)'};font-family:var(--font);transition:all .12s">${a.name}</button>`;
   }).join('');
 
-  // History rows — show 10 most recent, oldest at top, newest at bottom (like a chat)
+  // History rows — show 10 most recent, color-coded by tag
+  const TAG_COLORS={action:{bg:'#dcfce7',color:'#166534',label:'Action'},decision:{bg:'#e0f2fe',color:'#075985',label:'Decision'},question:{bg:'#f3e8ff',color:'#6b21a8',label:'Question'},discussion:{bg:'#fff7ed',color:'#9a3412',label:'Discuss'}};
   const recentHistory=data.history.slice(-10);
   const histRows=recentHistory.map((e,ri)=>{
     const realIdx=data.history.length-recentHistory.length+ri;
-    return`<div class="act-row">
-      <span class="act-date">${e.date||''}</span>
-      <span class="act-text">${esc(e.text)}</span>
-      <button class="act-del" onclick="deleteRoomEntry('${mt.id}',${realIdx})">✕</button>
+    const tc=TAG_COLORS[e.tag]||null;
+    const tagHtml=tc?`<span style="font-size:9px;padding:1px 6px;border-radius:3px;font-weight:600;background:${tc.bg};color:${tc.color};flex-shrink:0">${tc.label}</span>`:'';
+    // Render bullet items if stored as array
+    let contentHtml='';
+    if(Array.isArray(e.bullets)){
+      contentHtml=e.bullets.map(b=>{
+        const btc=TAG_COLORS[b.tag]||null;
+        const btag=btc?`<span style="font-size:9px;padding:1px 5px;border-radius:3px;font-weight:600;background:${btc.bg};color:${btc.color};margin-right:4px">${btc.label}</span>`:'';
+        return`<div style="display:flex;align-items:baseline;gap:4px;padding:1px 0">
+          <span style="font-size:12px;color:var(--text3);flex-shrink:0">•</span>
+          <span style="font-size:12px;color:var(--text);line-height:1.45;flex:1">${btag}${esc(b.text)}${b.owner?`<span style="font-size:10px;color:var(--text3)"> — ${b.owner}</span>`:''}</span>
+        </div>`;
+      }).join('');
+    } else {
+      contentHtml=`<span class="act-text">${esc(e.text)}</span>`;
+    }
+    return`<div class="act-row" style="flex-direction:column;align-items:flex-start;gap:3px;padding:8px 14px">
+      <div style="display:flex;align-items:center;gap:6px;width:100%">
+        <span class="act-date">${e.date||''}</span>
+        ${tagHtml}
+        <button class="act-del" onclick="deleteRoomEntry('${mt.id}',${realIdx})" style="margin-left:auto">✕</button>
+      </div>
+      <div style="width:100%">${contentHtml}</div>
     </div>`;
   }).join('');
 
@@ -2111,25 +2295,29 @@ function renderMeetingRoom(mt){
     <!-- TWO COLUMN BODY -->
     <div style="flex:1;display:flex;overflow:hidden;gap:0">
 
-      <!-- LEFT: ACTIVITY HISTORY -->
-      <div style="width:48%;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden">
+      <!-- LEFT: ACTIVITY HISTORY + LIVE NOTE ENTRY -->
+      <div style="width:52%;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden">
         <div style="background:${mt.color};padding:8px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0">
           <span style="font-size:14px">${mt.icon}</span>
           <span style="font-size:11px;font-weight:700;color:#fff;letter-spacing:.06em;text-transform:uppercase;flex:1">Activity History</span>
           <span style="font-size:10px;background:rgba(255,255,255,.2);color:#fff;border-radius:10px;padding:1px 8px">${data.history.length} entr${data.history.length===1?'y':'ies'}</span>
         </div>
         <!-- History scroll -->
-        <div style="flex:1;overflow-y:auto;min-height:0">
+        <div style="flex:1;overflow-y:auto;min-height:0" id="historyScroll_${mt.id}">
           ${histRows||`<div style="padding:14px;font-size:12px;color:var(--text3);font-style:italic">No entries yet</div>`}
         </div>
-        <!-- Add note form pinned to bottom -->
-        <div style="border-top:2px solid ${mt.color}33;padding:12px 14px;background:var(--surface2);flex-shrink:0">
-          <div style="font-size:10px;font-weight:700;color:${mt.color};text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">— Add New Note</div>
-          <textarea id="roomEntry_${mt.id}" placeholder="What happened? Updates? Next steps?" style="width:100%;font-size:12.5px;padding:8px 10px;border-radius:var(--radius-sm);border:1.5px solid ${mt.color}44;background:var(--surface);color:var(--text);font-family:var(--font);outline:none;resize:none;min-height:80px;line-height:1.5" onfocus="this.style.borderColor='${mt.color}'" onblur="this.style.borderColor='${mt.color}44'"></textarea>
-          <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
-            <input type="date" id="roomEntryDate_${mt.id}" value="${new Date().toISOString().slice(0,10)}" style="font-size:12px;padding:5px 7px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--surface);color:var(--text);font-family:var(--font);outline:none"/>
-            <button onclick="addRoomEntry('${mt.id}')" style="flex:1;padding:7px 0;border-radius:var(--radius-sm);font-size:12px;font-weight:600;border:none;background:${mt.color};color:#fff;cursor:pointer;font-family:var(--font)">Save Note</button>
+        <!-- LIVE BULLET NOTE ENTRY -->
+        <div style="border-top:2px solid ${mt.color}55;background:var(--surface2);flex-shrink:0">
+          <div style="padding:8px 12px 4px;display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:10px;font-weight:700;color:${mt.color};text-transform:uppercase;letter-spacing:.06em">Live Notes</span>
+            <div style="display:flex;gap:5px;align-items:center">
+              <input type="date" id="roomEntryDate_${mt.id}" value="${new Date().toISOString().slice(0,10)}" style="font-size:11px;padding:3px 6px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--surface);color:var(--text);font-family:var(--font);outline:none"/>
+              <button onclick="saveLiveNotes('${mt.id}')" style="font-size:11px;padding:4px 12px;border-radius:var(--radius-sm);border:none;background:${mt.color};color:#fff;cursor:pointer;font-family:var(--font);font-weight:600">Save to History</button>
+            </div>
           </div>
+          <!-- Bullet list -->
+          <div id="liveBullets_${mt.id}" style="padding:4px 12px;max-height:200px;overflow-y:auto;min-height:60px" onclick="focusLastBullet('${mt.id}')"></div>
+          <div style="padding:0 12px 8px;font-size:10px;color:var(--text3)">Enter = new bullet · click bullet to tag it · action tag = auto-adds to Action Items</div>
         </div>
       </div>
 
@@ -2176,7 +2364,7 @@ function renderMeetingRoom(mt){
   </div>`;
 }
 
-function selectMeeting(id){if(activeMeeting)saveMtgDraft(activeMeeting);activeMeeting=id;renderMeetings();if(id)setTimeout(()=>restoreMtgDraft(id),30);}
+function selectMeeting(id){if(activeMeeting)saveMtgDraft(activeMeeting);activeMeeting=id;renderMeetings();if(id)setTimeout(()=>{restoreMtgDraft(id);renderLiveBullets(id);},30);}
 
 function addMeetingType(){
   const label=prompt('Meeting type name (e.g. "Manufacturing"):');
@@ -2342,9 +2530,158 @@ function removeRoomTask(mid,i){
   data.tasks.splice(i,1);scheduleSave();renderMeetings();
   setTimeout(()=>restoreMtgDraft(mid),30);
 }
-function updateRoomRecap(mid,val){
+// ── LIVE BULLET NOTE SYSTEM ───────────────────────────────────────────────
+
+const BULLET_TAGS=['discussion','decision','action','question'];
+const BULLET_TAG_UI={
+  discussion:{label:'Discuss',bg:'#fff7ed',color:'#9a3412',border:'#fed7aa'},
+  decision:  {label:'Decision',bg:'#e0f2fe',color:'#075985',border:'#bae6fd'},
+  action:    {label:'Action',bg:'#dcfce7',color:'#166534',border:'#bbf7d0'},
+  question:  {label:'Question',bg:'#f3e8ff',color:'#6b21a8',border:'#e9d5ff'}
+};
+
+// Live bullets stored per meeting room: [{id, text, tag, owner}]
+const liveBullets={};
+
+function getLiveBullets(mid){
+  if(!liveBullets[mid])liveBullets[mid]=[];
+  return liveBullets[mid];
+}
+
+function renderLiveBullets(mid){
+  const container=document.getElementById('liveBullets_'+mid);
+  if(!container)return;
+  const bullets=getLiveBullets(mid);
+  if(!bullets.length){
+    // Start with one empty bullet
+    bullets.push({id:'b'+Date.now(),text:'',tag:null,owner:''});
+  }
+  const mt=state.meetingTypes.find(x=>x.id===mid);
+  const color=mt?mt.color:'#378ADD';
+  const data=state.meetingData[mid]||{};
+  const selectedAtts=(data.attendees||[]).length?(data.attendees||[]):MTG_OWNERS;
+  const ownerOpts=`<option value="">Owner?</option>`+selectedAtts.map(o=>`<option value="${o}">${o}</option>`).join('');
+
+  container.innerHTML=bullets.map((b,i)=>{
+    const tc=b.tag?BULLET_TAG_UI[b.tag]:null;
+    const tagBtns=BULLET_TAGS.map(t=>{
+      const ui=BULLET_TAG_UI[t];
+      const active=b.tag===t;
+      return`<button onclick="setBulletTag('${mid}',${i},'${active?'':t}')" style="font-size:9px;padding:1px 6px;border-radius:3px;border:1px solid ${active?ui.border:'var(--border-md)'};background:${active?ui.bg:'var(--surface)'};color:${active?ui.color:'var(--text3)'};cursor:pointer;font-family:var(--font);font-weight:${active?'700':'400'}">${ui.label}</button>`;
+    }).join('');
+    const ownerSel=b.tag==='action'?`<select onchange="setBulletOwner('${mid}',${i},this.value)" style="font-size:10px;border:1px solid var(--border-md);border-radius:3px;background:var(--bg);color:var(--text2);font-family:var(--font);padding:1px 4px;max-width:80px">${ownerOpts.replace(`value="${b.owner}"`,`value="${b.owner}" selected`)}</select>`:'';
+
+    return`<div style="display:flex;flex-direction:column;gap:2px;padding:4px 0;border-bottom:0.5px solid var(--border);position:relative" id="bullet_${mid}_${i}">
+      <div style="display:flex;align-items:flex-start;gap:6px">
+        <span style="font-size:13px;color:var(--text3);margin-top:3px;flex-shrink:0;user-select:none">•</span>
+        <input id="bulletInp_${mid}_${i}"
+          value="${esc(b.text)}"
+          placeholder="${i===bullets.length-1?'Type a note, Enter for new bullet…':''}"
+          style="flex:1;font-size:13px;padding:2px 0;border:none;background:none;color:var(--text);font-family:var(--font);outline:none;line-height:1.45"
+          oninput="updateBulletText('${mid}',${i},this.value)"
+          onkeydown="handleBulletKey(event,'${mid}',${i})"/>
+        ${ownerSel}
+      </div>
+      <div style="display:flex;gap:4px;padding-left:19px;flex-wrap:wrap">
+        ${tagBtns}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Scroll to bottom
+  container.scrollTop=container.scrollHeight;
+}
+
+function focusLastBullet(mid){
+  const bullets=getLiveBullets(mid);
+  if(!bullets.length)return;
+  const last=bullets.length-1;
+  const inp=document.getElementById('bulletInp_'+mid+'_'+last);
+  if(inp)inp.focus();
+}
+
+function updateBulletText(mid,i,val){
+  const bullets=getLiveBullets(mid);
+  if(bullets[i])bullets[i].text=val;
+  // Save draft to localStorage
+  try{localStorage.setItem('ws_live_bullets_'+mid,JSON.stringify(bullets));}catch(e){}
+}
+
+function setBulletTag(mid,i,tag){
+  const bullets=getLiveBullets(mid);
+  if(!bullets[i])return;
+  bullets[i].tag=tag||null;
+  // If tag is action and no text yet, keep focus
+  saveMtgDraft(mid);
+  renderLiveBullets(mid);
+  // Refocus the input for this bullet
+  setTimeout(()=>{const inp=document.getElementById('bulletInp_'+mid+'_'+i);if(inp)inp.focus();},20);
+}
+
+function setBulletOwner(mid,i,owner){
+  const bullets=getLiveBullets(mid);
+  if(bullets[i])bullets[i].owner=owner;
+}
+
+function handleBulletKey(event,mid,i){
+  const bullets=getLiveBullets(mid);
+  if(event.key==='Enter'){
+    event.preventDefault();
+    // Add new bullet after current
+    const newBullet={id:'b'+Date.now(),text:'',tag:null,owner:''};
+    bullets.splice(i+1,0,newBullet);
+    saveMtgDraft(mid);
+    renderLiveBullets(mid);
+    setTimeout(()=>{const inp=document.getElementById('bulletInp_'+mid+'_'+(i+1));if(inp)inp.focus();},20);
+  }
+  if(event.key==='Backspace'&&event.target.value===''&&bullets.length>1){
+    event.preventDefault();
+    bullets.splice(i,1);
+    saveMtgDraft(mid);
+    renderLiveBullets(mid);
+    // Focus previous bullet
+    const prev=Math.max(0,i-1);
+    setTimeout(()=>{
+      const inp=document.getElementById('bulletInp_'+mid+'_'+prev);
+      if(inp){inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);}
+    },20);
+  }
+}
+
+function saveLiveNotes(mid){
+  const bullets=getLiveBullets(mid);
+  const filled=bullets.filter(b=>b.text.trim());
+  if(!filled.length){showToast('No notes to save');return;}
+
   const data=state.meetingData[mid];if(!data)return;
-  data.recap=val;scheduleSave();
+  if(!data.history)data.history=[];
+  if(!data.tasks)data.tasks=[];
+
+  const dateEl=document.getElementById('roomEntryDate_'+mid);
+  const date=dateEl?dateEl.value:new Date().toISOString().slice(0,10);
+
+  // Save as a single history entry with bullets array
+  data.history.push({date,bullets:filled.map(b=>({text:b.text.trim(),tag:b.tag||'discussion',owner:b.owner||''}))});
+
+  // Auto-add action items to right panel
+  const actionBullets=filled.filter(b=>b.tag==='action'&&b.text.trim());
+  actionBullets.forEach(b=>{
+    data.tasks.push({text:b.text.trim(),done:false,owner:b.owner||'',projId:''});
+  });
+
+  // Clear live bullets
+  liveBullets[mid]=[{id:'b'+Date.now(),text:'',tag:null,owner:''}];
+  try{localStorage.removeItem('ws_live_bullets_'+mid);}catch(e){}
+
+  scheduleSave();
+  renderMeetings();
+  if(actionBullets.length)showToast(actionBullets.length+' action item'+(actionBullets.length>1?'s':'')+' added automatically');
+
+  // Scroll history to bottom
+  setTimeout(()=>{
+    const h=document.getElementById('historyScroll_'+mid);
+    if(h)h.scrollTop=h.scrollHeight;
+  },80);
 }
 function addOwner(){
   const name=prompt('Enter name:');if(!name||!name.trim())return;
@@ -2401,6 +2738,21 @@ function buildRoomEmailHtml(mid){
   const logoUrl='https://innovative1363.github.io/my-workspace/Logo_PNG.png';
 
   const recentHistory=(data.history||[]).slice(-8);
+
+  // Flatten all bullets from history, grouped by tag
+  const allBullets=[];
+  recentHistory.forEach(e=>{
+    if(Array.isArray(e.bullets)){
+      e.bullets.forEach(b=>allBullets.push({...b,date:e.date}));
+    } else if(e.text){
+      // Legacy plain text — split by / or newline
+      e.text.split(/\s*[\/\n]\s*/).filter(Boolean).forEach(seg=>allBullets.push({text:seg.trim(),tag:'discussion',date:e.date}));
+    }
+  });
+
+  const decisions=allBullets.filter(b=>b.tag==='decision');
+  const questions=allBullets.filter(b=>b.tag==='question');
+  const discussions=allBullets.filter(b=>!b.tag||b.tag==='discussion');
   const openTasks=(data.tasks||[]).filter(t=>!t.done);
   const doneTasks=(data.tasks||[]).filter(t=>t.done);
 
@@ -2501,15 +2853,29 @@ function buildRoomEmailHtml(mid){
       </td></tr>
     </table>`:''}
 
-    ${historyRows?`
-    <!-- RECENT ACTIVITY -->
-    <div style="font-family:Arial,sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#374151;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #e5e7eb">📋 Recent Activity</div>
-    <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;margin-bottom:28px">
-      <tr bgcolor="#f3f4f6">
-        <td style="padding:9px 16px;font-family:Arial,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6b7280;width:100px">Date</td>
-        <td style="padding:9px 16px 9px 0;font-family:Arial,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6b7280">Note</td>
+    ${decisions.length?`
+    <!-- DECISIONS -->
+    <div style="font-family:Arial,sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#075985;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #bae6fd">Decisions (${decisions.length})</div>
+    <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #bae6fd;border-radius:8px;overflow:hidden;margin-bottom:20px">
+      ${decisions.map(b=>`<tr><td style="padding:9px 16px;font-family:Arial,sans-serif;font-size:13px;color:#075985;font-weight:700;width:14px">→</td><td style="padding:9px 16px 9px 0;font-family:Arial,sans-serif;font-size:13px;color:#1f2937;line-height:1.5;border-bottom:1px solid #f0f9ff">${(b.text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</td></tr>`).join('')}
+    </table>`:''}
+
+    ${discussions.length?`
+    <!-- DISCUSSION -->
+    <div style="font-family:Arial,sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#374151;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #e5e7eb">📋 Discussion Notes</div>
+    <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;margin-bottom:20px">
+      <tr bgcolor="#f9fafb">
+        <td style="padding:8px 16px;font-family:Arial,sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6b7280;width:90px">Date</td>
+        <td style="padding:8px 16px 8px 0;font-family:Arial,sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6b7280">Note</td>
       </tr>
-      ${historyRows}
+      ${discussions.map((b,i)=>`<tr style="background:${i%2===0?'#ffffff':'#f9fafb'}"><td style="padding:8px 16px;font-family:Arial,sans-serif;font-size:11px;color:#6b7280;white-space:nowrap;vertical-align:top;border-bottom:1px solid #f0f0f0">${b.date||''}</td><td style="padding:8px 16px 8px 0;font-family:Arial,sans-serif;font-size:13px;color:#1f2937;line-height:1.5;border-bottom:1px solid #f0f0f0">${(b.text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</td></tr>`).join('')}
+    </table>`:''}
+
+    ${questions.length?`
+    <!-- QUESTIONS -->
+    <div style="font-family:Arial,sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#6b21a8;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #e9d5ff">Questions / Follow-ups (${questions.length})</div>
+    <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e9d5ff;border-radius:8px;overflow:hidden;margin-bottom:20px">
+      ${questions.map(b=>`<tr><td style="padding:9px 16px;font-family:Arial,sans-serif;font-size:14px;color:#6b21a8;font-weight:700;width:14px">?</td><td style="padding:9px 16px 9px 0;font-family:Arial,sans-serif;font-size:13px;color:#1f2937;line-height:1.5;border-bottom:1px solid #fdf4ff">${(b.text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</td></tr>`).join('')}
     </table>`:''}
 
     ${openTasks.length?`
