@@ -424,8 +424,14 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 body.dark .task-block-row.editing-name{background:var(--hl-bg)}
 .tblock-num{font-size:10px;font-weight:600;color:var(--text3);min-width:18px;flex-shrink:0;margin-top:3px}
 .tblock-cb{cursor:pointer;flex-shrink:0;accent-color:var(--accent);width:14px;height:14px;margin-top:3px}
-.tblock-text{font-size:13px;color:var(--text);flex:1;line-height:1.45;word-break:break-word;user-select:text}
-.tblock-text.done{text-decoration:line-through;color:var(--text3)}
+.tblock-text{font-size:13px;font-weight:500;color:var(--text);flex:1;line-height:1.45;word-break:break-word;user-select:text}
+.tblock-text.done{text-decoration:line-through;color:var(--text3);font-weight:400}
+/* SUBTASK DRAG HANDLE */
+.tblock-sub-drag{color:var(--text3);cursor:grab;font-size:11px;opacity:0;flex-shrink:0;padding:0 2px;user-select:none;transition:opacity .1s}
+.tblock-sub-row:hover .tblock-sub-drag{opacity:.6}
+.tblock-sub-drag:active{cursor:grabbing}
+.tblock-sub-row.sub-drag-over{border-top:2px solid var(--accent)}
+.tblock-sub-row.sub-dragging{opacity:.35;border-style:dashed}
 .tblock-edit{font-size:13px;font-family:var(--font);color:var(--text);border:none;background:none;outline:none;flex:1;line-height:1.45}
 .tblock-due{font-size:9px;padding:1px 5px;border-radius:4px;font-weight:500;flex-shrink:0;margin-top:3px}
 .tblock-due.due-today{background:#fde8e8;color:#b91c1c}
@@ -458,7 +464,25 @@ body.dark .tblock-due.due-week{background:#2a1f00;color:#fbbf24}
 .float-add-inp:focus{border-color:var(--border-strong)}
 .phase-progress{height:3px;border-radius:2px;background:var(--border-md);margin-top:4px;overflow:hidden}
 .phase-progress-fill{height:3px;border-radius:2px;background:#1D9E75;transition:width .3s}
-/* DONE TASK — collapsed to one line at bottom */
+/* TASK BLOCK ACTION BUTTONS — show on hover */
+.tblock-actions{display:flex;align-items:center;gap:2px;opacity:0;transition:opacity .1s;flex-shrink:0}
+.task-block-row:hover .tblock-actions{opacity:1}
+.tblock-btn{background:none;border:none;cursor:pointer;color:var(--text3);font-size:12px;padding:2px 4px;border-radius:4px;font-family:var(--font);line-height:1;transition:all .1s}
+.tblock-btn:hover{background:var(--surface2);color:var(--text2)}
+.tblock-btn.star-on{color:#c9a800;opacity:1}
+.tblock-btn.q-on{color:var(--q-text);opacity:1}
+/* TASK FOCUS MODAL */
+.task-focus-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px}
+.task-focus-modal{background:var(--bg);border-radius:var(--radius);width:min(700px,100%);max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden}
+.task-focus-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:12px;background:var(--surface);flex-shrink:0}
+.task-focus-title{font-size:18px;font-weight:600;color:var(--text);flex:1;line-height:1.3}
+.task-focus-body{flex:1;overflow-y:auto;padding:20px}
+.task-focus-sub-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:var(--radius-sm);margin-bottom:4px;background:var(--surface)}
+.task-focus-sub-row:hover{background:var(--surface2)}
+.task-focus-sub-cb{cursor:pointer;accent-color:var(--accent);width:15px;height:15px;flex-shrink:0}
+.task-focus-sub-text{font-size:14px;color:var(--text2);flex:1;line-height:1.4}
+.task-focus-sub-text.done{text-decoration:line-through;color:var(--text3)}
+.task-focus-sub-num{font-size:12px;color:var(--text3);min-width:22px;font-weight:500}
 .task-card.task-done-collapsed{opacity:.45;border-style:dashed;cursor:default}
 .task-card.task-done-collapsed:hover{border-color:var(--border);opacity:.55}
 .task-done-line{display:flex;align-items:center;gap:8px;padding:5px 12px;font-size:12px;color:var(--text3)}
@@ -1118,12 +1142,22 @@ function addTaskFromFloat(){
 function renderTaskBlock(t,stepNum){
   const subs=t.subtasks||[];
   const isEditing=editingTask===t.id;
-  const subOpen=expandedTasks[t.id]; // reuse expandedTasks for sub-input open state
+  const subOpen=expandedTasks[t.id];
   const dueClass=t.due==='today'?'due-today':t.due==='week'?'due-week':t.due==='someday'?'due-someday':'';
   const DUE_SHORT={today:'Today',week:'This week',someday:'Someday',none:''};
 
+  const hint=subOpen?'':`<div class="tblock-hint">click to add subtask · double-click text to edit</div>`;
+
+  const isQ=t.type==='question';
+
   const subRows=subs.map((s,si)=>`
-    <div class="tblock-sub-row">
+    <div class="tblock-sub-row" id="tbs_${s.id}"
+      draggable="true"
+      ondragstart="subDragStart(event,'${t.id}','${s.id}')"
+      ondragover="subDragOver(event,'${t.id}','${s.id}')"
+      ondrop="subDragDrop(event,'${t.id}','${s.id}')"
+      ondragleave="subDragLeave(event,'${s.id}')">
+      <span class="tblock-sub-drag" title="Drag to reorder">⠿</span>
       <input type="checkbox" class="tblock-sub-cb" ${s.done?'checked':''} onchange="toggleSub('${t.id}','${s.id}')" onclick="event.stopPropagation()"/>
       <span class="tblock-sub-num">${String.fromCharCode(97+si)}.</span>
       <span class="tblock-sub-text ${s.done?'done':''}" ondblclick="startEditSub('${s.id}');event.stopPropagation()">${esc(s.text)}</span>
@@ -1138,30 +1172,125 @@ function renderTaskBlock(t,stepNum){
       onblur="closeSubInput('${t.id}')"/>
   </div>`:'';
 
-  const hint=subOpen?'':`<div class="tblock-hint">click to add subtask · double-click text to edit</div>`;
-
   return`<div class="task-block" id="tc_${t.id}"
     oncontextmenu="showTaskCtx(event,'${t.id}')"
     ondragover="dragOver(event,'${t.id}')" ondrop="dragDrop(event,'${t.id}')" ondragleave="dragLeave(event,'${t.id}')">
-    <div class="task-block-row ${subOpen?'sub-open':''} ${isEditing?'editing-name':''}"
+    <div class="task-block-row ${subOpen?'sub-open':''} ${isEditing?'editing-name':''} ${isQ?'question-card':''}"
       onclick="handleBlockClick(event,'${t.id}')"
       draggable="true" ondragstart="dragStart(event,'${t.id}')">
       <input type="checkbox" class="tblock-cb" ${t.done?'checked':''} onchange="toggleTask('${t.id}')" onclick="event.stopPropagation()"/>
-      <span class="tblock-num">${stepNum}.</span>
+      <span class="tblock-num" style="${isQ?'color:var(--q-text)':''}">${stepNum}.</span>
       ${isEditing
         ?`<input class="tblock-edit" id="edit_${t.id}" value="${esc(t.text)}"
             onblur="saveTaskEdit('${t.id}',this.value)"
             onkeydown="if(event.key==='Enter')saveTaskEdit('${t.id}',this.value);if(event.key==='Escape'){editingTask=null;renderTasks(getProj())}"
             onclick="event.stopPropagation()"/>`
-        :`<span class="tblock-text ${t.done?'done':''}"
+        :`<span class="tblock-text ${t.done?'done':''} ${isQ?'question-text':''}"
             ondblclick="startEditTask('${t.id}');event.stopPropagation()">${linkify(t.text)}</span>`
       }
-      ${t.highlighted?`<span style="color:#c9a800;font-size:12px;flex-shrink:0">★</span>`:''}
       ${t.due&&t.due!=='none'?`<span class="tblock-due ${dueClass}">${DUE_SHORT[t.due]||''}</span>`:''}
+      <div class="tblock-actions" onclick="event.stopPropagation()">
+        <button class="tblock-btn ${isQ?'q-on':''}" onclick="toggleTaskType('${t.id}')" title="${isQ?'Convert to task':'Mark as question'}">?</button>
+        <button class="tblock-btn" onclick="openTaskFocus('${t.id}')" title="Open full view">⤢</button>
+        <button class="tblock-btn" onclick="delTask('${t.id}')" title="Delete task" style="color:#b33">×</button>
+      </div>
     </div>
     ${subs.length||subOpen?`<div class="tblock-subs">${subRows}${subAddRow}</div>`:''}
     ${subOpen?'':hint}
   </div>`;
+}
+
+function toggleTaskType(id){
+  const p=getProj();
+  const ph=findTaskPhase(id)||getPhaseKey();
+  const t=(p.tasks[ph]||[]).find(t=>t.id===id);
+  if(!t)return;
+  t.type=t.type==='question'?'task':'question';
+  scheduleSave();renderTasks(p);
+}
+
+function openTaskFocus(id){
+  const p=getProj();
+  const ph=findTaskPhase(id)||getPhaseKey();
+  const t=(p.tasks[ph]||[]).find(t=>t.id===id);
+  if(!t)return;
+
+  const subs=t.subtasks||[];
+  const subDone=subs.filter(s=>s.done).length;
+  const pct=subs.length?Math.round(subDone/subs.length*100):0;
+  const isQ=t.type==='question';
+  const projName=p.name||'';
+
+  const subRows=subs.map((s,si)=>`
+    <div class="task-focus-sub-row" id="focussub_${s.id}">
+      <input type="checkbox" class="task-focus-sub-cb" ${s.done?'checked':''}
+        onchange="focusToggleSub('${id}','${s.id}',this.checked,'${ph}')"/>
+      <span class="task-focus-sub-num">${String.fromCharCode(97+si)}.</span>
+      <span class="task-focus-sub-text ${s.done?'done':''}">${esc(s.text)}</span>
+    </div>`).join('');
+
+  const div=document.createElement('div');
+  div.className='task-focus-overlay';
+  div.onclick=e=>{if(e.target===div)div.remove();};
+  div.innerHTML=`
+    <div class="task-focus-modal">
+      <div class="task-focus-header">
+        <div style="flex:1">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:4px;display:flex;align-items:center;gap:6px">
+            <span>${esc(projName)}</span>
+            <span style="color:var(--border-md)">›</span>
+            <span>${esc(ph)}</span>
+            ${isQ?`<span style="font-size:10px;background:var(--q-bg);color:var(--q-text);border-radius:4px;padding:1px 6px;border:1px solid var(--q-border)">Question</span>`:''}
+          </div>
+          <div class="task-focus-title">${esc(t.text)}</div>
+          ${subs.length?`<div style="margin-top:8px;display:flex;align-items:center;gap:8px">
+            <div style="flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden">
+              <div style="height:4px;background:#1D9E75;border-radius:2px;width:${pct}%;transition:width .3s"></div>
+            </div>
+            <span style="font-size:11px;color:var(--text3)">${subDone}/${subs.length} done</span>
+          </div>`:''}
+        </div>
+        <button onclick="this.closest('.task-focus-overlay').remove()"
+          style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:20px;padding:0 4px;line-height:1;flex-shrink:0">✕</button>
+      </div>
+      <div class="task-focus-body">
+        ${subs.length?`
+          <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Subtasks</div>
+          <div id="focusSubList_${id}">${subRows}</div>`
+          :`<div style="font-size:13px;color:var(--text3);font-style:italic;padding:8px 0">No subtasks yet — add them in the task list</div>`
+        }
+        ${t.note?`
+          <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+            <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Notes</div>
+            <div style="font-size:13px;color:var(--text2);line-height:1.7;white-space:pre-wrap">${esc(t.note)}</div>
+          </div>`:''}
+        <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border);display:flex;gap:8px">
+          <button class="btn dark" onclick="this.closest('.task-focus-overlay').remove()" style="flex:1">Done</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(div);
+}
+
+function focusToggleSub(tid,sid,checked,ph){
+  const p=getProj();
+  const t=(p.tasks[ph]||[]).find(t=>t.id===tid);
+  const s=t&&(t.subtasks||[]).find(s=>s.id===sid);
+  if(!s)return;
+  s.done=checked;
+  // Check if all subtasks done
+  const allDone=(t.subtasks||[]).every(s=>s.done)&&(t.subtasks||[]).length>0;
+  if(allDone&&!t.done){t.done=true;t.doneAt=Date.now();}
+  else if(!checked&&t.done){t.done=false;delete t.doneAt;}
+  scheduleSave();
+  // Update the focus modal sub row in place
+  const row=document.getElementById('focussub_'+sid);
+  if(row){
+    const txt=row.querySelector('.task-focus-sub-text');
+    if(txt){if(checked)txt.classList.add('done');else txt.classList.remove('done');}
+  }
+  // Update main task list quietly
+  renderTasks(p);
 }
 
 function handleBlockClick(event,id){
@@ -1202,12 +1331,56 @@ function handleBlockSubKey(event,tid){
 }
 
 function closeSubInput(tid){
-  // Small delay so click events on subtask rows fire first
   setTimeout(()=>{
     if(document.activeElement&&document.activeElement.id==='subinp_'+tid)return;
     delete expandedTasks[tid];
     const p=getProj();if(p)renderTasks(p);
   },150);
+}
+
+function toggleTaskType(id){
+  const p=getProj();
+  const ph=findTaskPhase(id)||getPhaseKey();
+  const t=(p.tasks[ph]||[]).find(t=>t.id===id);
+  if(!t)return;
+  t.type=t.type==='question'?'task':'question';
+  scheduleSave();renderTasks(p);
+}
+
+// Subtask drag-and-drop reorder
+let _subDragSrc=null;
+function subDragStart(event,tid,sid){
+  event.stopPropagation();
+  _subDragSrc={tid,sid};
+  event.dataTransfer.effectAllowed='move';
+  const row=document.getElementById('tbs_'+sid);
+  if(row)row.classList.add('sub-dragging');
+}
+function subDragOver(event,tid,sid){
+  if(!_subDragSrc||_subDragSrc.tid!==tid||_subDragSrc.sid===sid)return;
+  event.preventDefault();event.stopPropagation();
+  event.dataTransfer.dropEffect='move';
+  document.querySelectorAll('.tblock-sub-row.sub-drag-over').forEach(r=>r.classList.remove('sub-drag-over'));
+  const row=document.getElementById('tbs_'+sid);
+  if(row)row.classList.add('sub-drag-over');
+}
+function subDragLeave(event,sid){
+  const row=document.getElementById('tbs_'+sid);
+  if(row)row.classList.remove('sub-drag-over');
+}
+function subDragDrop(event,tid,toSid){
+  event.preventDefault();event.stopPropagation();
+  if(!_subDragSrc||_subDragSrc.tid!==tid)return;
+  const fromSid=_subDragSrc.sid;_subDragSrc=null;
+  if(fromSid===toSid)return;
+  const p=getProj();const ph=findTaskPhase(tid)||getPhaseKey();
+  const t=(p.tasks[ph]||[]).find(t=>t.id===tid);if(!t||!t.subtasks)return;
+  const fromIdx=t.subtasks.findIndex(s=>s.id===fromSid);
+  const toIdx=t.subtasks.findIndex(s=>s.id===toSid);
+  if(fromIdx<0||toIdx<0)return;
+  const[moved]=t.subtasks.splice(fromIdx,1);
+  t.subtasks.splice(toIdx,0,moved);
+  scheduleSave();renderTasks(p);
 }
 
 // Add progress bars to existing phase chips without replacing them
@@ -2585,8 +2758,13 @@ function renderLiveBullets(mid){
           placeholder="${i===bullets.length-1?'Type a note, Enter for new bullet…':''}"
           style="flex:1;font-size:13px;padding:2px 0;border:none;background:none;color:var(--text);font-family:var(--font);outline:none;line-height:1.45"
           oninput="updateBulletText('${mid}',${i},this.value)"
-          onkeydown="handleBulletKey(event,'${mid}',${i})"/>
-        ${b.tag==='action'?`<select class="bullet-owner-sel" onchange="setBulletOwner('${mid}',${i},this.value)" style="font-size:10px;border:1px solid var(--border-md);border-radius:3px;background:var(--bg);color:var(--text2);font-family:var(--font);padding:1px 4px;max-width:80px">${ownerOpts.replace(`value="${b.owner}"`,`value="${b.owner}" selected`)}</select>`:''}
+          onkeydown="handleBulletKey(event,'${mid}',${i})"
+          onblur="handleBulletBlur(event,'${mid}',${i})"/>
+        ${b.tag==='action'?`<select class="bullet-owner-sel"
+          onmousedown="event.stopPropagation()"
+          onchange="setBulletOwner('${mid}',${i},this.value);event.stopPropagation()"
+          onfocus="event.stopPropagation()"
+          style="font-size:10px;border:1px solid var(--border-md);border-radius:3px;background:var(--bg);color:var(--text2);font-family:var(--font);padding:1px 4px;max-width:80px;cursor:pointer">${ownerOpts.replace(`value="${b.owner}"`,`value="${b.owner}" selected`)}</select>`:''}
       </div>
       <div class="bullet-tag-row" style="display:flex;gap:4px;padding-left:19px;flex-wrap:wrap">
         ${tagBtns}
@@ -2604,6 +2782,15 @@ function focusLastBullet(mid){
   const last=bullets.length-1;
   const inp=document.getElementById('bulletInp_'+mid+'_'+last);
   if(inp)inp.focus();
+}
+
+function handleBulletBlur(event,mid,i){
+  // If focus is moving to the owner select within the same bullet, don't re-render
+  const rel=event.relatedTarget;
+  if(rel&&rel.classList.contains('bullet-owner-sel'))return;
+  if(rel&&rel.classList.contains('bullet-tag-row'))return;
+  // Just save draft text quietly — no re-render
+  try{localStorage.setItem('ws_live_bullets_'+mid,JSON.stringify(getLiveBullets(mid)));}catch(e){}
 }
 
 function updateBulletText(mid,i,val){
@@ -2638,7 +2825,11 @@ function setBulletTag(mid,i,tag){
   // Update or insert owner select
   const existingSel=bulletEl.querySelector('.bullet-owner-sel');
   if(b.tag==='action'){
-    const selHtml=`<select class="bullet-owner-sel" onchange="setBulletOwner('${mid}',${i},this.value)" style="font-size:10px;border:1px solid var(--border-md);border-radius:3px;background:var(--bg);color:var(--text2);font-family:var(--font);padding:1px 4px;max-width:80px">${ownerOpts}</select>`;
+    const selHtml=`<select class="bullet-owner-sel"
+      onmousedown="event.stopPropagation()"
+      onchange="setBulletOwner('${mid}',${i},this.value);event.stopPropagation()"
+      onfocus="event.stopPropagation()"
+      style="font-size:10px;border:1px solid var(--border-md);border-radius:3px;background:var(--bg);color:var(--text2);font-family:var(--font);padding:1px 4px;max-width:80px;cursor:pointer">${ownerOpts}</select>`;
     const inputRow=bulletEl.querySelector('.bullet-input-row');
     if(!existingSel&&inputRow){
       inputRow.insertAdjacentHTML('beforeend',selHtml);
@@ -2659,6 +2850,9 @@ function setBulletTag(mid,i,tag){
 function setBulletOwner(mid,i,owner){
   const bullets=getLiveBullets(mid);
   if(bullets[i])bullets[i].owner=owner;
+  // Update the selected option without re-rendering
+  const sel=document.querySelector(`#bullet_${mid}_${i} .bullet-owner-sel`);
+  if(sel)sel.value=owner;
 }
 
 function handleBulletKey(event,mid,i){
