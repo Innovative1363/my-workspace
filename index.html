@@ -472,17 +472,15 @@ body.dark .tblock-due.due-week{background:#2a1f00;color:#fbbf24}
 .tblock-btn.star-on{color:#c9a800;opacity:1}
 .tblock-btn.q-on{color:var(--q-text);opacity:1}
 /* TASK FOCUS MODAL */
-.task-focus-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px}
-.task-focus-modal{background:var(--bg);border-radius:var(--radius);width:min(700px,100%);max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden}
-.task-focus-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:12px;background:var(--surface);flex-shrink:0}
-.task-focus-title{font-size:18px;font-weight:600;color:var(--text);flex:1;line-height:1.3}
-.task-focus-body{flex:1;overflow-y:auto;padding:20px}
-.task-focus-sub-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:var(--radius-sm);margin-bottom:4px;background:var(--surface)}
-.task-focus-sub-row:hover{background:var(--surface2)}
-.task-focus-sub-cb{cursor:pointer;accent-color:var(--accent);width:15px;height:15px;flex-shrink:0}
-.task-focus-sub-text{font-size:14px;color:var(--text2);flex:1;line-height:1.4}
+.task-focus-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:600;display:flex;align-items:center;justify-content:center;padding:16px}
+.task-focus-modal{background:var(--bg);border-radius:var(--radius);width:min(820px,96vw);max-height:92vh;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,.35);overflow:hidden}
+.task-focus-sub-row{display:flex;align-items:center;gap:16px;padding:14px 32px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s}
+.task-focus-sub-row:hover{background:var(--surface)}
+.task-focus-sub-row:last-child{border-bottom:none}
+.task-focus-sub-cb{cursor:pointer;accent-color:var(--accent);width:18px;height:18px;flex-shrink:0}
+.task-focus-sub-num{font-size:13px;color:var(--text3);min-width:26px;font-weight:600}
+.task-focus-sub-text{font-size:15px;color:var(--text);flex:1;line-height:1.4}
 .task-focus-sub-text.done{text-decoration:line-through;color:var(--text3)}
-.task-focus-sub-num{font-size:12px;color:var(--text3);min-width:22px;font-weight:500}
 .task-card.task-done-collapsed{opacity:.45;border-style:dashed;cursor:default}
 .task-card.task-done-collapsed:hover{border-color:var(--border);opacity:.55}
 .task-done-line{display:flex;align-items:center;gap:8px;padding:5px 12px;font-size:12px;color:var(--text3)}
@@ -1219,55 +1217,75 @@ function openTaskFocus(id){
   const subDone=subs.filter(s=>s.done).length;
   const pct=subs.length?Math.round(subDone/subs.length*100):0;
   const isQ=t.type==='question';
-  const projName=p.name||'';
+  const color=p.phaseColors&&p.phaseColors[ph]||'#555';
 
   const subRows=subs.map((s,si)=>`
-    <div class="task-focus-sub-row" id="focussub_${s.id}">
+    <div class="task-focus-sub-row" id="focussub_${s.id}" onclick="event.stopPropagation()">
       <input type="checkbox" class="task-focus-sub-cb" ${s.done?'checked':''}
         onchange="focusToggleSub('${id}','${s.id}',this.checked,'${ph}')"/>
       <span class="task-focus-sub-num">${String.fromCharCode(97+si)}.</span>
       <span class="task-focus-sub-text ${s.done?'done':''}">${esc(s.text)}</span>
+      ${s.done?`<span style="font-size:11px;color:var(--color-text-success,#166534);flex-shrink:0">✓</span>`:''}
     </div>`).join('');
 
   const div=document.createElement('div');
   div.className='task-focus-overlay';
   div.onclick=e=>{if(e.target===div)div.remove();};
+
   div.innerHTML=`
-    <div class="task-focus-modal">
-      <div class="task-focus-header">
-        <div style="flex:1">
-          <div style="font-size:11px;color:var(--text3);margin-bottom:4px;display:flex;align-items:center;gap:6px">
-            <span>${esc(projName)}</span>
-            <span style="color:var(--border-md)">›</span>
-            <span>${esc(ph)}</span>
-            ${isQ?`<span style="font-size:10px;background:var(--q-bg);color:var(--q-text);border-radius:4px;padding:1px 6px;border:1px solid var(--q-border)">Question</span>`:''}
-          </div>
-          <div class="task-focus-title">${esc(t.text)}</div>
-          ${subs.length?`<div style="margin-top:8px;display:flex;align-items:center;gap:8px">
-            <div style="flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden">
-              <div style="height:4px;background:#1D9E75;border-radius:2px;width:${pct}%;transition:width .3s"></div>
-            </div>
-            <span style="font-size:11px;color:var(--text3)">${subDone}/${subs.length} done</span>
-          </div>`:''}
+    <div class="task-focus-modal" style="width:min(820px,96vw);max-height:92vh">
+
+      <!-- COLORED TOP BAR -->
+      <div style="background:${color};height:5px;flex-shrink:0;border-radius:var(--radius) var(--radius) 0 0"></div>
+
+      <!-- HEADER -->
+      <div style="padding:24px 32px 20px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="font-size:11px;background:${color}22;color:${color};border:1px solid ${color}44;border-radius:4px;padding:2px 8px;font-weight:600">${esc(p.name)}</span>
+          <span style="color:var(--text3);font-size:13px">›</span>
+          <span style="font-size:11px;color:var(--text3)">${esc(ph)}</span>
+          ${isQ?`<span style="font-size:10px;background:var(--q-bg);color:var(--q-text);border-radius:4px;padding:2px 8px;border:1px solid var(--q-border);font-weight:600;margin-left:4px">Question</span>`:''}
+          <button onclick="this.closest('.task-focus-overlay').remove()"
+            style="margin-left:auto;background:none;border:none;cursor:pointer;color:var(--text3);font-size:22px;padding:0;line-height:1;flex-shrink:0">✕</button>
         </div>
-        <button onclick="this.closest('.task-focus-overlay').remove()"
-          style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:20px;padding:0 4px;line-height:1;flex-shrink:0">✕</button>
-      </div>
-      <div class="task-focus-body">
+        <div style="font-size:22px;font-weight:700;color:var(--text);line-height:1.3;margin-bottom:${subs.length?'16px':'0'}">${esc(t.text)}</div>
+
         ${subs.length?`
-          <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Subtasks</div>
-          <div id="focusSubList_${id}">${subRows}</div>`
-          :`<div style="font-size:13px;color:var(--text3);font-style:italic;padding:8px 0">No subtasks yet — add them in the task list</div>`
-        }
-        ${t.note?`
-          <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
-            <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Notes</div>
-            <div style="font-size:13px;color:var(--text2);line-height:1.7;white-space:pre-wrap">${esc(t.note)}</div>
-          </div>`:''}
-        <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border);display:flex;gap:8px">
-          <button class="btn dark" onclick="this.closest('.task-focus-overlay').remove()" style="flex:1">Done</button>
-        </div>
+        <!-- PROGRESS BAR -->
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="flex:1;height:6px;background:var(--border-md);border-radius:3px;overflow:hidden">
+            <div style="height:6px;background:${pct===100?'#1D9E75':color};border-radius:3px;width:${pct}%;transition:width .4s ease" id="focusProgBar"></div>
+          </div>
+          <span style="font-size:13px;font-weight:600;color:var(--text2);min-width:70px" id="focusProgLabel">${subDone} of ${subs.length} done</span>
+          <span style="font-size:12px;color:var(--text3)" id="focusProgPct">${pct}%</span>
+        </div>`:''}
       </div>
+
+      <!-- SUBTASKS BODY -->
+      <div class="task-focus-body" style="padding:0;flex:1;overflow-y:auto;min-height:0">
+        ${subs.length?`
+        <div id="focusSubList_${id}" style="display:flex;flex-direction:column">
+          ${subRows}
+        </div>
+        `:`<div style="padding:40px 32px;text-align:center">
+          <div style="font-size:36px;margin-bottom:12px;opacity:.3">📋</div>
+          <div style="font-size:14px;color:var(--text3)">No subtasks yet</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:4px">Add subtasks from the task list to track steps here</div>
+        </div>`}
+
+        ${t.note?`<div style="padding:20px 32px;border-top:1px solid var(--border)">
+          <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Notes</div>
+          <div style="font-size:14px;color:var(--text2);line-height:1.7;white-space:pre-wrap">${esc(t.note)}</div>
+        </div>`:''}
+      </div>
+
+      <!-- FOOTER -->
+      <div style="padding:16px 32px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;display:flex;align-items:center;gap:12px">
+        <div style="font-size:12px;color:var(--text3);flex:1">${subs.length?`Click a checkbox to mark steps complete · changes save automatically`:''}</div>
+        <button onclick="this.closest('.task-focus-overlay').remove()"
+          style="padding:10px 32px;background:var(--text);color:var(--bg);border:none;border-radius:var(--radius);cursor:pointer;font-size:14px;font-weight:600;font-family:var(--font)">Done</button>
+      </div>
+
     </div>`;
   document.body.appendChild(div);
 }
@@ -1278,18 +1296,37 @@ function focusToggleSub(tid,sid,checked,ph){
   const s=t&&(t.subtasks||[]).find(s=>s.id===sid);
   if(!s)return;
   s.done=checked;
-  // Check if all subtasks done
   const allDone=(t.subtasks||[]).every(s=>s.done)&&(t.subtasks||[]).length>0;
   if(allDone&&!t.done){t.done=true;t.doneAt=Date.now();}
   else if(!checked&&t.done){t.done=false;delete t.doneAt;}
   scheduleSave();
-  // Update the focus modal sub row in place
+  // Update subtask row style in modal
   const row=document.getElementById('focussub_'+sid);
   if(row){
     const txt=row.querySelector('.task-focus-sub-text');
     if(txt){if(checked)txt.classList.add('done');else txt.classList.remove('done');}
+    // Update checkmark badge
+    let badge=row.querySelector('.focus-done-badge');
+    if(checked&&!badge){
+      badge=document.createElement('span');
+      badge.className='focus-done-badge';
+      badge.style.cssText='font-size:11px;color:#166534;flex-shrink:0';
+      badge.textContent='✓';
+      row.appendChild(badge);
+    } else if(!checked&&badge){badge.remove();}
   }
-  // Update main task list quietly
+  // Update progress bar and label
+  const subs=t.subtasks||[];
+  const subDone=subs.filter(s=>s.done).length;
+  const pct=subs.length?Math.round(subDone/subs.length*100):0;
+  const bar=document.getElementById('focusProgBar');
+  const label=document.getElementById('focusProgLabel');
+  const pctEl=document.getElementById('focusProgPct');
+  if(bar)bar.style.width=pct+'%';
+  if(label)label.textContent=subDone+' of '+subs.length+' done';
+  if(pctEl)pctEl.textContent=pct+'%';
+  if(bar&&pct===100)bar.style.background='#1D9E75';
+  // Refresh task list
   renderTasks(p);
 }
 
@@ -2760,11 +2797,11 @@ function renderLiveBullets(mid){
           oninput="updateBulletText('${mid}',${i},this.value)"
           onkeydown="handleBulletKey(event,'${mid}',${i})"
           onblur="handleBulletBlur(event,'${mid}',${i})"/>
-        ${b.tag==='action'?`<select class="bullet-owner-sel"
-          onmousedown="event.stopPropagation()"
-          onchange="setBulletOwner('${mid}',${i},this.value);event.stopPropagation()"
-          onfocus="event.stopPropagation()"
-          style="font-size:10px;border:1px solid var(--border-md);border-radius:3px;background:var(--bg);color:var(--text2);font-family:var(--font);padding:1px 4px;max-width:80px;cursor:pointer">${ownerOpts.replace(`value="${b.owner}"`,`value="${b.owner}" selected`)}</select>`:''}
+        ${b.tag==='action'?`<div class="bullet-owner-wrap" onclick="event.stopPropagation();toggleOwnerPicker('${mid}',${i})" style="position:relative;flex-shrink:0">
+          <div class="bullet-owner-btn" id="ownerBtn_${mid}_${i}" style="font-size:10px;padding:2px 8px;border-radius:3px;border:1px solid var(--border-md);background:var(--surface);color:${b.owner?'var(--text)':'var(--text3)'};cursor:pointer;font-family:var(--font);white-space:nowrap;min-width:60px;display:flex;align-items:center;gap:4px">
+            ${b.owner||'Owner?'}<span style="font-size:8px;opacity:.6">▾</span>
+          </div>
+        </div>`:''}
       </div>
       <div class="bullet-tag-row" style="display:flex;gap:4px;padding-left:19px;flex-wrap:wrap">
         ${tagBtns}
@@ -2785,11 +2822,8 @@ function focusLastBullet(mid){
 }
 
 function handleBulletBlur(event,mid,i){
-  // If focus is moving to the owner select within the same bullet, don't re-render
   const rel=event.relatedTarget;
-  if(rel&&rel.classList.contains('bullet-owner-sel'))return;
-  if(rel&&rel.classList.contains('bullet-tag-row'))return;
-  // Just save draft text quietly — no re-render
+  if(rel&&(rel.closest('.bullet-owner-wrap')||rel.closest('.owner-picker-menu')))return;
   try{localStorage.setItem('ws_live_bullets_'+mid,JSON.stringify(getLiveBullets(mid)));}catch(e){}
 }
 
@@ -2806,11 +2840,6 @@ function setBulletTag(mid,i,tag){
   bullets[i].tag=tag||null;
   saveMtgDraft(mid);
 
-  // Surgical DOM update — don't re-render the whole list (causes dropdown flicker)
-  const mt=state.meetingTypes.find(x=>x.id===mid);
-  const data=state.meetingData[mid]||{};
-  const selectedAtts=(data.attendees||[]).length?(data.attendees||[]):MTG_OWNERS;
-  const ownerOpts=`<option value="">Owner?</option>`+selectedAtts.map(o=>`<option value="${o}">${o}</option>`).join('');
   const b=bullets[i];
   const bulletEl=document.getElementById('bullet_'+mid+'_'+i);
   if(!bulletEl)return;
@@ -2821,26 +2850,23 @@ function setBulletTag(mid,i,tag){
     const active=b.tag===t;
     return`<button onclick="setBulletTag('${mid}',${i},'${active?'':t}')" style="font-size:9px;padding:1px 6px;border-radius:3px;border:1px solid ${active?ui.border:'var(--border-md)'};background:${active?ui.bg:'var(--surface)'};color:${active?ui.color:'var(--text3)'};cursor:pointer;font-family:var(--font);font-weight:${active?'700':'400'}">${ui.label}</button>`;
   }).join('');
-
-  // Update or insert owner select
-  const existingSel=bulletEl.querySelector('.bullet-owner-sel');
-  if(b.tag==='action'){
-    const selHtml=`<select class="bullet-owner-sel"
-      onmousedown="event.stopPropagation()"
-      onchange="setBulletOwner('${mid}',${i},this.value);event.stopPropagation()"
-      onfocus="event.stopPropagation()"
-      style="font-size:10px;border:1px solid var(--border-md);border-radius:3px;background:var(--bg);color:var(--text2);font-family:var(--font);padding:1px 4px;max-width:80px;cursor:pointer">${ownerOpts}</select>`;
-    const inputRow=bulletEl.querySelector('.bullet-input-row');
-    if(!existingSel&&inputRow){
-      inputRow.insertAdjacentHTML('beforeend',selHtml);
-    }
-  } else {
-    if(existingSel)existingSel.remove();
-  }
-
-  // Update tag buttons row
   const tagRow=bulletEl.querySelector('.bullet-tag-row');
   if(tagRow)tagRow.innerHTML=tagBtns;
+
+  // Add or remove owner button
+  const inputRow=bulletEl.querySelector('.bullet-input-row');
+  const existingWrap=bulletEl.querySelector('.bullet-owner-wrap');
+  if(b.tag==='action'&&!existingWrap&&inputRow){
+    const wrap=document.createElement('div');
+    wrap.className='bullet-owner-wrap';
+    wrap.style.cssText='position:relative;flex-shrink:0';
+    wrap.setAttribute('onclick','event.stopPropagation();toggleOwnerPicker("'+mid+'",'+i+')');
+    wrap.innerHTML=`<div class="bullet-owner-btn" id="ownerBtn_${mid}_${i}" style="font-size:10px;padding:2px 8px;border-radius:3px;border:1px solid var(--border-md);background:var(--surface);color:var(--text3);cursor:pointer;font-family:inherit;white-space:nowrap;min-width:60px;display:flex;align-items:center;gap:4px">Owner?<span style="font-size:8px;opacity:.6">▾</span></div>`;
+    inputRow.appendChild(wrap);
+  } else if(b.tag!=='action'&&existingWrap){
+    existingWrap.remove();
+    bullets[i].owner='';
+  }
 
   // Refocus the text input
   const inp=document.getElementById('bulletInp_'+mid+'_'+i);
@@ -2850,9 +2876,49 @@ function setBulletTag(mid,i,tag){
 function setBulletOwner(mid,i,owner){
   const bullets=getLiveBullets(mid);
   if(bullets[i])bullets[i].owner=owner;
-  // Update the selected option without re-rendering
-  const sel=document.querySelector(`#bullet_${mid}_${i} .bullet-owner-sel`);
-  if(sel)sel.value=owner;
+  // Update the button label
+  const btn=document.getElementById('ownerBtn_'+mid+'_'+i);
+  if(btn)btn.innerHTML=`${owner||'Owner?'}<span style="font-size:8px;opacity:.6">▾</span>`;
+  if(owner&&btn)btn.style.color='var(--text)';
+}
+
+function toggleOwnerPicker(mid,i){
+  // Close any existing picker
+  document.querySelectorAll('.owner-picker-menu').forEach(m=>m.remove());
+
+  const btn=document.getElementById('ownerBtn_'+mid+'_'+i);
+  if(!btn)return;
+  const wrap=btn.closest('.bullet-owner-wrap');
+  if(!wrap)return;
+
+  const data=state.meetingData[mid]||{};
+  const owners=(data.attendees||[]).length?(data.attendees||[]):MTG_OWNERS;
+  const bullets=getLiveBullets(mid);
+  const current=bullets[i]?bullets[i].owner:'';
+
+  const menu=document.createElement('div');
+  menu.className='owner-picker-menu';
+  menu.style.cssText='position:absolute;top:calc(100% + 4px);left:0;background:var(--surface);border:1px solid var(--border-md);border-radius:var(--radius-sm);box-shadow:0 4px 16px rgba(0,0,0,.15);z-index:999;min-width:110px;padding:3px';
+
+  owners.forEach(o=>{
+    const item=document.createElement('div');
+    item.textContent=o;
+    item.style.cssText=`font-size:12px;padding:6px 10px;cursor:pointer;border-radius:4px;color:var(--text);font-family:inherit;background:${current===o?'var(--surface2)':'transparent'}`;
+    item.onmouseenter=()=>item.style.background='var(--surface2)';
+    item.onmouseleave=()=>item.style.background=current===o?'var(--surface2)':'transparent';
+    item.onmousedown=e=>{
+      e.preventDefault();e.stopPropagation();
+      setBulletOwner(mid,i,o);
+      menu.remove();
+    };
+    menu.appendChild(item);
+  });
+
+  // Close on outside click
+  setTimeout(()=>document.addEventListener('click',()=>menu.remove(),{once:true}),10);
+
+  wrap.style.position='relative';
+  wrap.appendChild(menu);
 }
 
 function handleBulletKey(event,mid,i){
