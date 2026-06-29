@@ -72,7 +72,15 @@ body.dark .btn.dark{background:var(--text);color:var(--bg)}
 html,body{height:100%;overflow:hidden}
 body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex;flex-direction:column}
 /* TOPBAR */
-.topbar{display:flex;align-items:center;gap:10px;padding:8px 18px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;height:48px}
+.topbar{display:flex;align-items:center;gap:8px;padding:0 14px 0 0;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;height:44px}
+.topbar .logo{font-size:13px;font-weight:600;color:var(--text2);letter-spacing:.01em;padding:0 14px;border-right:1px solid var(--border);height:44px;display:flex;align-items:center;flex-shrink:0}
+.topbar .logo em{font-style:normal;color:var(--text3);font-weight:400}
+.proj-title-top{font-size:16px;font-weight:600;font-family:var(--font);color:var(--text);border:none;background:none;outline:none;flex:1;min-width:80px;padding:0 8px}
+.proj-title-top::placeholder{color:var(--text3);font-weight:400}
+.main-tabs{display:flex;gap:0;padding:0 16px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+.main-tab{padding:6px 14px;font-size:12.5px;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:all .12s;white-space:nowrap;margin-bottom:-1px;user-select:none}
+.main-tab:hover{color:var(--text2)}
+.main-tab.active{color:var(--text);border-bottom-color:var(--accent)}
 .logo{font-size:13px;font-weight:500;letter-spacing:.02em;white-space:nowrap}
 .logo em{color:var(--text3);font-style:normal;font-weight:400}
 .spacer{flex:1}
@@ -113,8 +121,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 .proj-title{font-size:20px;font-weight:600;font-family:var(--font);color:var(--text);border:none;background:none;outline:none;flex:1}
 .proj-title::placeholder{color:var(--text3)}
 /* PHASE BAR */
-.phase-bar{display:flex;gap:6px;padding:10px 22px;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto;flex-shrink:0;align-items:center}
-.phase-chip{padding:5px 15px;border-radius:20px;font-size:13px;cursor:pointer;border:1px solid transparent;white-space:nowrap;transition:all .1s;font-family:var(--font);user-select:none;color:#fff;font-weight:600;opacity:.75}
+.phase-bar{display:flex;gap:5px;padding:6px 16px;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto;flex-shrink:0;align-items:center}
+.phase-chip{padding:4px 13px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid transparent;white-space:nowrap;transition:all .1s;font-family:var(--font);user-select:none;color:#fff;font-weight:600;opacity:.75}
 .phase-chip:hover{opacity:1}
 .phase-chip.active{opacity:1;box-shadow:0 0 0 2px rgba(0,0,0,0.22)}
 .phase-chip.done{text-decoration:line-through;opacity:.35}
@@ -124,7 +132,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 /* CONTENT */
 .content{flex:1;display:flex;overflow:hidden}
 /* TASKS PANEL */
-.tasks-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;padding:14px 20px 14px;gap:10px}
+.tasks-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;padding:8px 16px 10px;gap:6px}
 .panel-row{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .panel-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--text2);flex:1}
 .add-row{display:flex;gap:8px;flex-shrink:0}
@@ -406,9 +414,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 .cal-section-head{font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:5px}
 .cal-section-body{display:flex;flex-direction:column}
 /* SUBTASK INDENT FIX — handled in main CSS above */
-/* TWO-COLUMN TASK GRID */
-.task-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px;align-items:start}
-.task-block{margin-bottom:8px;break-inside:avoid;position:relative}
+/* TWO-COLUMN TASK GRID — column-first ordering (1,3,5 left; 2,4,6 right) */
+.task-grid{column-count:2;column-gap:16px;column-fill:balance}
+.task-block{margin-bottom:8px;break-inside:avoid;position:relative;display:inline-block;width:100%}
 .task-block-row{display:flex;align-items:flex-start;gap:6px;padding:4px 6px;border-radius:var(--radius-sm);cursor:pointer;transition:background .1s}
 .task-block-row:hover{background:var(--surface2)}
 .task-block-row.sub-open{background:var(--surface2);border-radius:var(--radius-sm) var(--radius-sm) 0 0}
@@ -442,7 +450,7 @@ body.dark .tblock-due.due-week{background:#2a1f00;color:#fbbf24}
 /* HINT TEXT */
 .tblock-hint{font-size:9.5px;color:var(--text3);padding:2px 6px;opacity:.55;margin-left:10px}
 /* DONE SECTION */
-.task-grid-done-divider{grid-column:1/-1;border-top:1px dashed var(--border);margin:8px 0 6px;padding-top:4px;display:flex;align-items:center;gap:8px}
+.task-grid-done-divider{column-span:all;border-top:1px dashed var(--border);margin:8px 0 6px;padding-top:4px;display:flex;align-items:center;gap:8px}
 .task-grid-done-label{font-size:10px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;color:var(--text3)}
 /* FLOATING ADD BAR */
 .float-add-bar{position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--border-md);padding:8px 0 4px;display:flex;gap:8px;align-items:center;z-index:10;flex-shrink:0}
@@ -513,15 +521,17 @@ body.dark .tblock-due.due-week{background:#2a1f00;color:#fbbf24}
 </head>
 <body>
 <div class="topbar">
-  <button class="btn mob-menu-btn" onclick="toggleSidebar()" style="font-size:18px;padding:4px 8px;border:none;background:none;color:var(--text)">☰</button>
+  <button class="btn mob-menu-btn" onclick="toggleSidebar()" style="font-size:18px;padding:4px 8px;border:none;background:none;color:var(--text);flex-shrink:0">☰</button>
   <div class="logo">Workspace <em>/ projects</em></div>
-  <div class="spacer"></div>
-  <input class="sync-url" id="urlInput" placeholder="Paste Apps Script URL to sync..."/>
-  <button class="btn dark" onclick="connectSheet()">Connect</button>
-  <button class="btn" onclick="loadFromSheets()">↺ Load</button>
-  <span class="badge none" id="syncBadge">not connected</span>
-  <button class="btn" onclick="toggleDark()" id="darkBtn" title="Toggle dark mode" style="padding:5px 8px;font-size:14px">🌙</button>
-  <button class="btn" onclick="showSyncMenu(event)" title="Sync tools" style="padding:5px 8px;font-size:13px">⚙</button>
+  <input class="proj-title-top" id="projTitleInput" placeholder="Select a project…" oninput="updateTitle(this.value)"/>
+  <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:auto">
+    <input class="sync-url" id="urlInput" placeholder="Paste Apps Script URL…"/>
+    <button class="btn dark" onclick="connectSheet()">Connect</button>
+    <button class="btn" onclick="loadFromSheets()">↺ Load</button>
+    <span class="badge none" id="syncBadge">not connected</span>
+    <button class="btn" onclick="toggleDark()" id="darkBtn" title="Toggle dark mode" style="padding:5px 8px;font-size:14px">🌙</button>
+    <button class="btn" onclick="showSyncMenu(event)" title="Sync tools" style="padding:5px 8px;font-size:13px">⚙</button>
+  </div>
 </div>
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 <div class="layout">
@@ -534,15 +544,13 @@ body.dark .tblock-due.due-week{background:#2a1f00;color:#fbbf24}
     <div id="addProjArea"></div>
   </div>
   <div class="main">
-    <div class="proj-header">
-      <input class="proj-title" id="projTitleInput" placeholder="Project name" oninput="updateTitle(this.value)"/>
-      <button class="btn sm" onclick="sendToClaude()" title="Send phase to Claude for deck/summary">✦ Send to Claude ↗</button>
-    </div>
     <div class="main-tabs">
       <span class="main-tab active" id="mtTasks" onclick="switchMainTab('tasks')">☑ Tasks</span>
       <span class="main-tab" id="mtCalendar" onclick="switchMainTab('calendar')">📅 Calendar</span>
       <span class="main-tab" id="mtMeetings" onclick="switchMainTab('meetings')">📋 Meetings</span>
       <span class="main-tab" id="mtArchive" onclick="switchMainTab('archive')">🗄 Archive</span>
+      <div style="flex:1"></div>
+      <button class="btn sm" onclick="sendToClaude()" style="align-self:center;margin-right:8px;font-size:11px">✦ Send to Claude ↗</button>
     </div>
     <div class="phase-bar" id="phaseBar"></div>
     <div class="content">
@@ -1058,14 +1066,14 @@ function renderTasks(p){
   html+=`<div class="task-grid" style="flex:1;overflow-y:auto;min-height:0;padding-bottom:4px">`;
 
   if(highlighted.length){
-    html+=`<div style="grid-column:1/-1;font-size:10px;font-weight:600;color:#9a8a10;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">★ Highlights</div>`;
+    html+=`<div style="column-span:all;font-size:10px;font-weight:600;color:#9a8a10;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;display:block;width:100%">★ Highlights</div>`;
     html+=highlighted.map((t,i)=>renderTaskBlock(t,i+1)).join('');
   }
 
   if(regular.length){
     html+=regular.map((t,i)=>renderTaskBlock(t,highlighted.length+i+1)).join('');
   } else if(!highlighted.length){
-    html+=`<div class="empty" style="grid-column:1/-1">No tasks yet — add one below</div>`;
+    html+=`<div class="empty" style="column-span:all">No tasks yet — add one below</div>`;
   }
 
   if(done.length){
@@ -1157,20 +1165,18 @@ function renderTaskBlock(t,stepNum){
 }
 
 function handleBlockClick(event,id){
-  // Single click = toggle subtask input open/closed
-  // Double-click fires dblclick on the text span, not here
+  // Don't fire on checkbox, subtask inputs, or buttons
   if(event.target.classList.contains('tblock-cb'))return;
-  if(event.target.classList.contains('tblock-text'))return; // let dblclick handle
+  if(event.target.closest('.tblock-subs'))return;
+  if(event.target.tagName==='BUTTON'||event.target.tagName==='A')return;
+  // Double-click on text handled by dblclick — single click still opens subtask input
+  if(event.detail>=2&&event.target.classList.contains('tblock-text'))return;
+
   const wasOpen=expandedTasks[id];
-  // Close all others first
   Object.keys(expandedTasks).forEach(k=>delete expandedTasks[k]);
-  if(!wasOpen){
-    expandedTasks[id]=true;
-  }
+  if(!wasOpen)expandedTasks[id]=true;
   const p=getProj();if(p)renderTasks(p);
-  if(expandedTasks[id]){
-    setTimeout(()=>{const inp=document.getElementById('subinp_'+id);if(inp)inp.focus();},30);
-  }
+  if(expandedTasks[id])setTimeout(()=>{const inp=document.getElementById('subinp_'+id);if(inp)inp.focus();},30);
 }
 
 function handleBlockSubKey(event,tid){
@@ -2572,7 +2578,7 @@ function renderLiveBullets(mid){
     const ownerSel=b.tag==='action'?`<select onchange="setBulletOwner('${mid}',${i},this.value)" style="font-size:10px;border:1px solid var(--border-md);border-radius:3px;background:var(--bg);color:var(--text2);font-family:var(--font);padding:1px 4px;max-width:80px">${ownerOpts.replace(`value="${b.owner}"`,`value="${b.owner}" selected`)}</select>`:'';
 
     return`<div style="display:flex;flex-direction:column;gap:2px;padding:4px 0;border-bottom:0.5px solid var(--border);position:relative" id="bullet_${mid}_${i}">
-      <div style="display:flex;align-items:flex-start;gap:6px">
+      <div class="bullet-input-row" style="display:flex;align-items:flex-start;gap:6px">
         <span style="font-size:13px;color:var(--text3);margin-top:3px;flex-shrink:0;user-select:none">•</span>
         <input id="bulletInp_${mid}_${i}"
           value="${esc(b.text)}"
@@ -2580,9 +2586,9 @@ function renderLiveBullets(mid){
           style="flex:1;font-size:13px;padding:2px 0;border:none;background:none;color:var(--text);font-family:var(--font);outline:none;line-height:1.45"
           oninput="updateBulletText('${mid}',${i},this.value)"
           onkeydown="handleBulletKey(event,'${mid}',${i})"/>
-        ${ownerSel}
+        ${b.tag==='action'?`<select class="bullet-owner-sel" onchange="setBulletOwner('${mid}',${i},this.value)" style="font-size:10px;border:1px solid var(--border-md);border-radius:3px;background:var(--bg);color:var(--text2);font-family:var(--font);padding:1px 4px;max-width:80px">${ownerOpts.replace(`value="${b.owner}"`,`value="${b.owner}" selected`)}</select>`:''}
       </div>
-      <div style="display:flex;gap:4px;padding-left:19px;flex-wrap:wrap">
+      <div class="bullet-tag-row" style="display:flex;gap:4px;padding-left:19px;flex-wrap:wrap">
         ${tagBtns}
       </div>
     </div>`;
@@ -2611,11 +2617,43 @@ function setBulletTag(mid,i,tag){
   const bullets=getLiveBullets(mid);
   if(!bullets[i])return;
   bullets[i].tag=tag||null;
-  // If tag is action and no text yet, keep focus
   saveMtgDraft(mid);
-  renderLiveBullets(mid);
-  // Refocus the input for this bullet
-  setTimeout(()=>{const inp=document.getElementById('bulletInp_'+mid+'_'+i);if(inp)inp.focus();},20);
+
+  // Surgical DOM update — don't re-render the whole list (causes dropdown flicker)
+  const mt=state.meetingTypes.find(x=>x.id===mid);
+  const data=state.meetingData[mid]||{};
+  const selectedAtts=(data.attendees||[]).length?(data.attendees||[]):MTG_OWNERS;
+  const ownerOpts=`<option value="">Owner?</option>`+selectedAtts.map(o=>`<option value="${o}">${o}</option>`).join('');
+  const b=bullets[i];
+  const bulletEl=document.getElementById('bullet_'+mid+'_'+i);
+  if(!bulletEl)return;
+
+  // Update tag buttons
+  const tagBtns=BULLET_TAGS.map(t=>{
+    const ui=BULLET_TAG_UI[t];
+    const active=b.tag===t;
+    return`<button onclick="setBulletTag('${mid}',${i},'${active?'':t}')" style="font-size:9px;padding:1px 6px;border-radius:3px;border:1px solid ${active?ui.border:'var(--border-md)'};background:${active?ui.bg:'var(--surface)'};color:${active?ui.color:'var(--text3)'};cursor:pointer;font-family:var(--font);font-weight:${active?'700':'400'}">${ui.label}</button>`;
+  }).join('');
+
+  // Update or insert owner select
+  const existingSel=bulletEl.querySelector('.bullet-owner-sel');
+  if(b.tag==='action'){
+    const selHtml=`<select class="bullet-owner-sel" onchange="setBulletOwner('${mid}',${i},this.value)" style="font-size:10px;border:1px solid var(--border-md);border-radius:3px;background:var(--bg);color:var(--text2);font-family:var(--font);padding:1px 4px;max-width:80px">${ownerOpts}</select>`;
+    const inputRow=bulletEl.querySelector('.bullet-input-row');
+    if(!existingSel&&inputRow){
+      inputRow.insertAdjacentHTML('beforeend',selHtml);
+    }
+  } else {
+    if(existingSel)existingSel.remove();
+  }
+
+  // Update tag buttons row
+  const tagRow=bulletEl.querySelector('.bullet-tag-row');
+  if(tagRow)tagRow.innerHTML=tagBtns;
+
+  // Refocus the text input
+  const inp=document.getElementById('bulletInp_'+mid+'_'+i);
+  if(inp)inp.focus();
 }
 
 function setBulletOwner(mid,i,owner){
