@@ -2563,7 +2563,10 @@ function renderMeetingRoom(mt){
       <div style="display:flex;align-items:center;gap:6px;width:100%">
         <span class="act-date">${e.date||''}</span>
         ${tagHtml}
-        <button class="act-del" onclick="deleteRoomEntry('${mt.id}',${realIdx})" style="margin-left:auto">✕</button>
+        <div style="margin-left:auto;display:flex;gap:4px">
+          <button class="act-del" title="Edit entry" onclick="editRoomEntry('${mt.id}',${realIdx})" style="opacity:0;font-size:11px;color:var(--text3);padding:1px 5px">✎</button>
+          <button class="act-del" onclick="deleteRoomEntry('${mt.id}',${realIdx})">✕</button>
+        </div>
       </div>
       <div style="width:100%">${contentHtml}</div>
     </div>`;
@@ -2763,6 +2766,14 @@ function saveMtgDraft(mid){
   if(taskInp)mtgTaskDrafts[mid]=taskInp.value;
 }
 
+// Helper: re-render meetings and restore bullets + draft
+function _meetingRerender(mid){
+  const snap=getLiveBullets(mid).map(b=>({...b}));
+  renderMeetings();
+  liveBullets[mid]=snap;
+  setTimeout(()=>{renderLiveBullets(mid);restoreMtgDraft(mid);},30);
+}
+
 function toggleRoomAttendee(mid,name){
   saveMtgDraft(mid);
   initMeetingTypes();
@@ -2770,8 +2781,7 @@ function toggleRoomAttendee(mid,name){
   if(!data.attendees)data.attendees=[];
   const idx=data.attendees.indexOf(name);
   if(idx>=0)data.attendees.splice(idx,1);else data.attendees.push(name);
-  scheduleSave();renderMeetings();
-  restoreMtgDraft(mid);
+  scheduleSave();_meetingRerender(mid);
 }
 function addRoomEntry(mid){
   const ta=document.getElementById('roomEntry_'+mid);
@@ -2781,19 +2791,66 @@ function addRoomEntry(mid){
   const data=state.meetingData[mid];if(!data)return;
   if(!data.history)data.history=[];
   data.history.push({text,date:dateEl?dateEl.value:(mtgDrafts[mid]?mtgDrafts[mid].date:new Date().toISOString().slice(0,10))});
-  // Clear draft from memory AND localStorage so it doesn't reappear after tab switch
   delete mtgDrafts[mid];
   try{localStorage.removeItem('ws_mtg_draft_'+mid);}catch(e){}
   if(ta)ta.value='';
-  scheduleSave();renderMeetings();
+  scheduleSave();
+  const snap=getLiveBullets(mid).map(b=>({...b}));
+  renderMeetings();
+  liveBullets[mid]=snap;
   setTimeout(()=>{
+    renderLiveBullets(mid);
     const hEl=document.querySelector(`#meetingsView .act-history`);
     if(hEl)hEl.scrollTop=hEl.scrollHeight;
-  },50);
+  },30);
 }
+function deleteLiveBullet(mid,i){
+  const bullets=getLiveBullets(mid);
+  if(bullets.length<=1){
+    // Just clear text instead of removing last bullet
+    bullets[0]={id:'b'+Date.now(),text:'',tag:null,owner:''};
+  } else {
+    bullets.splice(i,1);
+  }
+  renderLiveBullets(mid);
+  // Focus the bullet at the same position (or last)
+  setTimeout(()=>{
+    const idx=Math.min(i,bullets.length-1);
+    const inp=document.getElementById('bulletInp_'+mid+'_'+idx);
+    if(inp)inp.focus();
+  },20);
+}
+
 function deleteRoomEntry(mid,idx){
   const data=state.meetingData[mid];if(!data||!data.history)return;
-  data.history.splice(idx,1);scheduleSave();renderMeetings();
+  data.history.splice(idx,1);scheduleSave();_meetingRerender(mid);
+}
+
+function editRoomEntry(mid,realIdx){
+  const data=state.meetingData[mid];
+  if(!data||!data.history[realIdx])return;
+  const entry=data.history[realIdx];
+
+  // If bullets array, load into live bullets for editing
+  if(Array.isArray(entry.bullets)){
+    // Populate live bullets with the saved entry for re-editing
+    liveBullets[mid]=entry.bullets.map(b=>({...b,id:'b'+Date.now()+Math.random()}));
+    // Remove from history (will be re-saved on Save to History)
+    data.history.splice(realIdx,1);
+    scheduleSave();
+    _meetingRerender(mid);
+    setTimeout(()=>{
+      renderLiveBullets(mid);
+      showToast('Entry loaded for editing — click Save to History when done');
+    },40);
+  } else {
+    // Legacy plain text — load into a single bullet
+    liveBullets[mid]=[{id:'b'+Date.now(),text:entry.text||'',tag:entry.tag||null,owner:''}];
+    data.history.splice(realIdx,1);
+    scheduleSave();
+    _meetingRerender(mid);
+    setTimeout(()=>{renderLiveBullets(mid);showToast('Entry loaded for editing');},40);
+  }
 }
 function addRoomTask(mid){
   saveMtgDraft(mid);
@@ -2804,14 +2861,12 @@ function addRoomTask(mid){
   data.tasks.push({text:text||'',done:false,owner:'',projId:''});
   delete mtgTaskDrafts[mid];
   if(inp)inp.value='';
-  scheduleSave();renderMeetings();
-  setTimeout(()=>restoreMtgDraft(mid),30);
+  scheduleSave();_meetingRerender(mid);
 }
 function toggleRoomTask(mid,i){
   saveMtgDraft(mid);
   const data=state.meetingData[mid];if(!data||!data.tasks[i])return;
-  data.tasks[i].done=!data.tasks[i].done;scheduleSave();renderMeetings();
-  setTimeout(()=>restoreMtgDraft(mid),30);
+  data.tasks[i].done=!data.tasks[i].done;scheduleSave();_meetingRerender(mid);
 }
 function updateRoomTask(mid,i,field,val){
   const data=state.meetingData[mid];if(!data||!data.tasks[i])return;
@@ -2833,14 +2888,13 @@ function assignRoomTask(mid,i,pid){
       showToast('Added to '+p.name);
     }
   }
-  scheduleSave();renderMeetings();
-  setTimeout(()=>restoreMtgDraft(mid),30);
+  scheduleSave();_meetingRerender(mid);
 }
 function removeRoomTask(mid,i){
   saveMtgDraft(mid);
   const data=state.meetingData[mid];if(!data)return;
-  data.tasks.splice(i,1);scheduleSave();renderMeetings();
-  setTimeout(()=>restoreMtgDraft(mid),30);
+  data.tasks.splice(i,1);
+  scheduleSave();_meetingRerender(mid);
 }
 // ── LIVE BULLET NOTE SYSTEM ───────────────────────────────────────────────
 
@@ -2881,7 +2935,6 @@ function renderLiveBullets(mid){
       const active=b.tag===t;
       return`<button onclick="setBulletTag('${mid}',${i},'${active?'':t}')" style="font-size:9px;padding:1px 6px;border-radius:3px;border:1px solid ${active?ui.border:'var(--border-md)'};background:${active?ui.bg:'var(--surface)'};color:${active?ui.color:'var(--text3)'};cursor:pointer;font-family:var(--font);font-weight:${active?'700':'400'}">${ui.label}</button>`;
     }).join('');
-    const ownerSel=b.tag==='action'?`<select onchange="setBulletOwner('${mid}',${i},this.value)" style="font-size:10px;border:1px solid var(--border-md);border-radius:3px;background:var(--bg);color:var(--text2);font-family:var(--font);padding:1px 4px;max-width:80px">${ownerOpts.replace(`value="${b.owner}"`,`value="${b.owner}" selected`)}</select>`:'';
 
     return`<div style="display:flex;flex-direction:column;gap:2px;padding:4px 0;border-bottom:0.5px solid var(--border);position:relative" id="bullet_${mid}_${i}">
       <div class="bullet-input-row" style="display:flex;align-items:flex-start;gap:6px">
@@ -2898,6 +2951,11 @@ function renderLiveBullets(mid){
             ${b.owner||'Owner?'}<span style="font-size:8px;opacity:.6">▾</span>
           </div>
         </div>`:''}
+        <button onclick="deleteLiveBullet('${mid}',${i})" title="Remove bullet"
+          style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:13px;padding:0 3px;opacity:0;transition:opacity .1s;line-height:1;flex-shrink:0"
+          onmouseenter="this.style.opacity=1;this.style.color='#b33'"
+          onmouseleave="this.style.opacity=0;this.style.color='var(--text3)'"
+          id="bulletDel_${mid}_${i}">×</button>
       </div>
       <div class="bullet-tag-row" style="display:flex;gap:4px;padding-left:19px;flex-wrap:wrap">
         ${tagBtns}
@@ -3081,9 +3139,8 @@ function addOwner(){
   const name=prompt('Enter name:');if(!name||!name.trim())return;
   if(!state.extraOwners)state.extraOwners=[];
   if(!state.extraOwners.includes(name.trim()))state.extraOwners.push(name.trim());
-  if(activeMeeting)saveMtgDraft(activeMeeting);
-  scheduleSave();renderMeetings();
-  if(activeMeeting)setTimeout(()=>restoreMtgDraft(activeMeeting),30);
+  if(activeMeeting){saveMtgDraft(activeMeeting);scheduleSave();_meetingRerender(activeMeeting);}
+  else scheduleSave();
 }
 
 // Robust draft restore — tries immediately and retries once if element not found
@@ -3131,22 +3188,28 @@ function buildRoomEmailHtml(mid){
   const today=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
   const logoUrl='https://innovative1363.github.io/my-workspace/Logo_PNG.png';
 
-  const recentHistory=(data.history||[]).slice(-8);
+  // Split bullets by recency — newest entry's bullets are "recent", rest are "prior"
+  const allEntries=(data.history||[]).slice(-8);
+  const recentEntry=allEntries.length?allEntries[allEntries.length-1]:null;
+  const priorEntries=allEntries.length>1?allEntries.slice(-3,-1):[];
 
-  // Flatten all bullets from history, grouped by tag
-  const allBullets=[];
-  recentHistory.forEach(e=>{
-    if(Array.isArray(e.bullets)){
-      e.bullets.forEach(b=>allBullets.push({...b,date:e.date}));
-    } else if(e.text){
-      // Legacy plain text — split by / or newline
-      e.text.split(/\s*[\/\n]\s*/).filter(Boolean).forEach(seg=>allBullets.push({text:seg.trim(),tag:'discussion',date:e.date}));
-    }
-  });
+  // Flatten bullets from an entry
+  function entryBullets(e){
+    if(Array.isArray(e.bullets))return e.bullets;
+    if(e.text){return e.text.split(/\s*[\/\n]\s*/).filter(Boolean).map(t=>({text:t.trim(),tag:'discussion'}));}
+    return[];
+  }
 
-  const decisions=allBullets.filter(b=>b.tag==='decision');
-  const questions=allBullets.filter(b=>b.tag==='question');
-  const discussions=allBullets.filter(b=>!b.tag||b.tag==='discussion');
+  const recentBullets=recentEntry?entryBullets(recentEntry):[];
+  const priorBullets=priorEntries.flatMap(e=>entryBullets(e).map(b=>({...b,date:e.date})));
+
+  const decisions=recentBullets.filter(b=>b.tag==='decision')
+    .concat(priorBullets.filter(b=>b.tag==='decision'));
+  const questions=recentBullets.filter(b=>b.tag==='question')
+    .concat(priorBullets.filter(b=>b.tag==='question'));
+  const recentDisc=recentBullets.filter(b=>!b.tag||b.tag==='discussion');
+  const priorDisc=priorBullets.filter(b=>!b.tag||b.tag==='discussion');
+
   const openTasks=(data.tasks||[]).filter(t=>!t.done);
   const doneTasks=(data.tasks||[]).filter(t=>t.done);
 
@@ -3249,27 +3312,44 @@ function buildRoomEmailHtml(mid){
 
     ${decisions.length?`
     <!-- DECISIONS -->
-    <div style="font-family:Arial,sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#075985;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #bae6fd">Decisions (${decisions.length})</div>
+    <div style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#075985;margin-bottom:10px;padding-bottom:7px;border-bottom:2px solid #bae6fd">Decisions (${decisions.length})</div>
     <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #bae6fd;border-radius:8px;overflow:hidden;margin-bottom:20px">
-      ${decisions.map(b=>`<tr><td style="padding:9px 16px;font-family:Arial,sans-serif;font-size:13px;color:#075985;font-weight:700;width:14px">→</td><td style="padding:9px 16px 9px 0;font-family:Arial,sans-serif;font-size:13px;color:#1f2937;line-height:1.5;border-bottom:1px solid #f0f9ff">${(b.text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</td></tr>`).join('')}
+      ${decisions.map(b=>`<tr><td style="padding:10px 14px;font-family:Arial,sans-serif;font-size:14px;color:#075985;font-weight:700;width:14px;vertical-align:top">→</td><td style="padding:10px 14px 10px 0;font-family:Arial,sans-serif;font-size:13px;color:#1f2937;line-height:1.5;border-bottom:1px solid #f0f9ff">${(b.text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</td></tr>`).join('')}
     </table>`:''}
 
-    ${discussions.length?`
-    <!-- DISCUSSION -->
-    <div style="font-family:Arial,sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#374151;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #e5e7eb">📋 Discussion Notes</div>
-    <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;margin-bottom:20px">
-      <tr bgcolor="#f9fafb">
-        <td style="padding:8px 16px;font-family:Arial,sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6b7280;width:90px">Date</td>
-        <td style="padding:8px 16px 8px 0;font-family:Arial,sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6b7280">Note</td>
+    ${recentDisc.length?`
+    <!-- LATEST NOTES — large bullets -->
+    <div style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:${color};margin-bottom:14px;padding-bottom:7px;border-bottom:2px solid ${color}44">📋 Latest Notes — ${recentEntry?recentEntry.date:''}</div>
+    ${recentDisc.map(b=>`
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:8px;border:1px solid ${color}22;border-radius:8px;overflow:hidden">
+      <tr>
+        <td style="background:${color}0d;padding:12px 16px">
+          <table width="100%" cellpadding="0" cellspacing="0"><tr>
+            <td width="20" style="vertical-align:top;padding-top:4px">
+              <div style="width:8px;height:8px;border-radius:50%;background:${color};margin-top:2px"></div>
+            </td>
+            <td style="font-family:Arial,sans-serif;font-size:14px;color:#1f2937;line-height:1.6">${(b.text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</td>
+          </tr></table>
+        </td>
       </tr>
-      ${discussions.map((b,i)=>`<tr style="background:${i%2===0?'#ffffff':'#f9fafb'}"><td style="padding:8px 16px;font-family:Arial,sans-serif;font-size:11px;color:#6b7280;white-space:nowrap;vertical-align:top;border-bottom:1px solid #f0f0f0">${b.date||''}</td><td style="padding:8px 16px 8px 0;font-family:Arial,sans-serif;font-size:13px;color:#1f2937;line-height:1.5;border-bottom:1px solid #f0f0f0">${(b.text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</td></tr>`).join('')}
+    </table>`).join('')}
+    <div style="height:12px"></div>`:''}
+
+    ${priorDisc.length?`
+    <!-- PRIOR NOTES — compact -->
+    <div style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#9ca3af;margin-bottom:8px">Prior Notes</div>
+    <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #f3f4f6;border-radius:8px;overflow:hidden;margin-bottom:20px">
+      ${priorDisc.map((b,i)=>`<tr style="background:${i%2===0?'#fafafa':'#fff'}">
+        <td style="padding:6px 12px;font-family:Arial,sans-serif;font-size:11px;color:#9ca3af;white-space:nowrap;vertical-align:top;border-bottom:1px solid #f3f4f6;width:80px">${b.date||''}</td>
+        <td style="padding:6px 12px 6px 0;font-family:Arial,sans-serif;font-size:12px;color:#6b7280;line-height:1.45;border-bottom:1px solid #f3f4f6">${(b.text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</td>
+      </tr>`).join('')}
     </table>`:''}
 
     ${questions.length?`
     <!-- QUESTIONS -->
-    <div style="font-family:Arial,sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#6b21a8;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #e9d5ff">Questions / Follow-ups (${questions.length})</div>
+    <div style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#6b21a8;margin-bottom:10px;padding-bottom:7px;border-bottom:2px solid #e9d5ff">Questions / Follow-ups (${questions.length})</div>
     <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e9d5ff;border-radius:8px;overflow:hidden;margin-bottom:20px">
-      ${questions.map(b=>`<tr><td style="padding:9px 16px;font-family:Arial,sans-serif;font-size:14px;color:#6b21a8;font-weight:700;width:14px">?</td><td style="padding:9px 16px 9px 0;font-family:Arial,sans-serif;font-size:13px;color:#1f2937;line-height:1.5;border-bottom:1px solid #fdf4ff">${(b.text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</td></tr>`).join('')}
+      ${questions.map(b=>`<tr><td style="padding:9px 14px;font-family:Arial,sans-serif;font-size:15px;color:#6b21a8;font-weight:700;width:14px;vertical-align:top">?</td><td style="padding:9px 14px 9px 0;font-family:Arial,sans-serif;font-size:13px;color:#1f2937;line-height:1.5;border-bottom:1px solid #fdf4ff">${(b.text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</td></tr>`).join('')}
     </table>`:''}
 
     ${openTasks.length?`
